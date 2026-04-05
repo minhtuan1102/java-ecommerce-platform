@@ -3,7 +3,7 @@ package com.tuan.ecommerce.modules.category.application.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public class CreateCategoryRequest {
+public class UpdateCategoryRequest {
 
     @NotBlank(message = "Category name is required")
     @Size(min = 2, max = 100, message = "Category name must be between 2 and 100 characters")
@@ -28,3 +28,4 @@ public class CreateCategoryRequest {
         this.description = description;
     }
 }
+
