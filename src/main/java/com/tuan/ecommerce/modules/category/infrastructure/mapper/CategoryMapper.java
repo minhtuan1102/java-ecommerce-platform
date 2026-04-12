@@ -12,10 +12,10 @@ import java.util.List;
 public class CategoryMapper {
 
     public Category toEntity(CreateCategoryRequest request) {
-        Category category = new Category();
-        category.setName(request.getName().trim());
-        category.setDescription(normalizeDescription(request.getDescription()));
-        return category;
+        return Category.builder()
+                .name(request.getName().trim())
+                .description(normalizeDescription(request.getDescription()))
+                .build();
     }
 
     public void updateEntity(Category category, UpdateCategoryRequest request) {
@@ -24,13 +24,13 @@ public class CategoryMapper {
     }
 
     public CategoryResponse toResponse(Category category) {
-        CategoryResponse response = new CategoryResponse();
-        response.setId(category.getId());
-        response.setName(category.getName());
-        response.setDescription(category.getDescription());
-        response.setCreatedAt(category.getCreatedAt());
-        response.setUpdatedAt(category.getUpdatedAt());
-        return response;
+        return CategoryResponse.builder()
+                .id(category.getId())
+                .name(category.getName())
+                .description(category.getDescription())
+                .createdAt(category.getCreatedAt())
+                .updatedAt(category.getUpdatedAt())
+                .build();
     }
 
     public List<CategoryResponse> toResponseList(List<Category> categories) {
