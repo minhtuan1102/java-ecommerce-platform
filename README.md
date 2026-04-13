@@ -33,33 +33,33 @@ Mỗi sprint đều có output chạy được.
 ### Sprint 1 (Week 1) - Auth Skeleton + PostgreSQL
 
 #### Mục tiêu tuần
-- [ ] Cấu hình PostgreSQL local ổn định.
-- [ ] Tạo bảng `users`, `roles`, `user_roles`, `refresh_tokens`.
-- [ ] Tạo skeleton module `auth` (entity + repository + service + controller).
-- [ ] Seed role cơ bản (`ROLE_USER`, `ROLE_ADMIN`) + 1 admin local.
+- [x] Cấu hình PostgreSQL local ổn định.
+- [x] Tạo bảng `users`, `roles`, `user_roles`, `refresh_tokens`.
+- [x] Tạo skeleton module `auth` (entity + repository + service + controller).
+- [x] Seed role cơ bản (`ROLE_USER`, `ROLE_ADMIN`) + 1 admin local.
 
 #### Output cần có
-- [ ] App boot được.
-- [ ] DB tạo schema và đọc/ghi user được.
+- [x] App boot được.
+- [x] DB tạo schema và đọc/ghi user được.
 
 #### Day 1-7
 
 Day 1 - Kết nối DB
-- [ ] Tạo database `ecommerce` local.
-- [ ] Cập nhật `src/main/resources/application.properties`.
-- [ ] Chạy app, xác nhận kết nối DB thành công.
+- [x] Tạo database `ecommerce` local.
+- [x] Cập nhật `src/main/resources/application.properties`.
+- [x] Chạy app, xác nhận kết nối DB thành công.
 Deliverable: backend boot không lỗi datasource.
 
 Day 2 - Tạo schema auth
-- [ ] Tạo file SQL (ví dụ `src/main/resources/sql/01_auth_schema.sql`).
-- [ ] Tạo 4 bảng auth + PK/FK/index tối thiểu.
-- [ ] Chạy script và kiểm tra bảng trong PostgreSQL.
+- [x] Tạo file SQL (ví dụ `src/main/resources/sql/01_auth_schema.sql`).
+- [x] Tạo 4 bảng auth + PK/FK/index tối thiểu.
+- [x] Chạy script và kiểm tra bảng trong PostgreSQL.
 Deliverable: có đủ bảng `users/roles/user_roles/refresh_tokens`.
 
 Day 3 - Khung module auth
-- [ ] Tạo package `src/main/java/com/tuan/ecommerce/modules/auth`.
-- [ ] Tạo 4 lớp chính theo pattern hiện tại: `api/application/domain/infrastructure`.
-- [ ] Tạo class khung: `AuthController`, `AuthService`, entity/repository.
+- [x] Tạo package `src/main/java/com/tuan/ecommerce/modules/auth`.
+- [x] Tạo 4 lớp chính theo pattern hiện tại: `api/application/domain/infrastructure`.
+- [x] Tạo class khung: `AuthController`, `AuthService`, entity/repository.
 Deliverable: project compile với module auth mới.
 
 Day 4 - Entity mapping
@@ -69,21 +69,21 @@ Day 4 - Entity mapping
 Deliverable: đọc/ghi user + role qua repository.
 
 Day 5 - API skeleton
-- [ ] Tạo `GET /api/v1/auth/health`.
-- [ ] Tạo khung `POST /api/v1/auth/register` và `POST /api/v1/auth/login`.
-- [ ] Tạo DTO request/response cơ bản.
+- [x] Tạo `GET /api/v1/auth/health`.
+- [x] Tạo khung `POST /api/v1/auth/register` và `POST /api/v1/auth/login`.
+- [x] Tạo DTO request/response cơ bản.
 Deliverable: endpoint auth trả JSON đúng format.
 
 Day 6 - Seed dữ liệu
-- [ ] Seed `ROLE_USER`, `ROLE_ADMIN`.
-- [ ] Seed 1 admin local để test nhanh.
-- [ ] Xác nhận admin có role `ROLE_ADMIN` trong `user_roles`.
+- [x] Seed `ROLE_USER`, `ROLE_ADMIN`.
+- [x] Seed 1 admin local để test nhanh.
+- [x] Xác nhận admin có role `ROLE_ADMIN` trong `user_roles`.
 Deliverable: DB có dữ liệu seed sẵn cho Sprint 2.
 
 Day 7 - Test nền + dọn code
-- [ ] Viết test cơ bản cho auth service/repository.
-- [ ] Refactor naming/package đồng nhất với module `category`.
-- [ ] Tick lại checklist Sprint 1.
+- [x] Viết test cơ bản cho auth service/repository.
+- [x] Refactor naming/package đồng nhất với module `category`.
+- [x] Tick lại checklist Sprint 1.
 Deliverable: test nền pass, sẵn sàng vào JWT thật.
 
 ---

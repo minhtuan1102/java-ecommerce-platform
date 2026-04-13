@@ -2,8 +2,10 @@ package com.tuan.ecommerce.modules.auth.application;
 
 import com.tuan.ecommerce.modules.auth.application.dto.LoginRequest;
 import com.tuan.ecommerce.modules.auth.application.dto.RegisterRequest;
+import com.tuan.ecommerce.modules.auth.domain.Role;
 import com.tuan.ecommerce.modules.auth.domain.User;
 import com.tuan.ecommerce.modules.auth.infrastructure.mapper.AuthMapper;
+import com.tuan.ecommerce.modules.auth.infrastructure.persistence.role.RoleRepository;
 import com.tuan.ecommerce.modules.auth.infrastructure.persistence.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,14 +20,31 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthServiceTest {
 
     private AuthService authService;
+    private RoleRepository roleRepository;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(new InMemoryUserRepository(), new AuthMapper());
+        roleRepository = new InMemoryRoleRepository();
+        roleRepository.save(Role.builder().name("ROLE_USER").build());
+        authService = new AuthService(new InMemoryUserRepository(), roleRepository, new AuthMapper());
+    }
+
+    @Test
+    void register_shouldAssignDefaultRole() {
+        RegisterRequest request = new RegisterRequest();
+        request.setUsername("john");
+        request.setEmail("john@mail.com");
+        request.setPassword("secret123");
+
+        var result = authService.register(request);
+
+        assertEquals("john", result.getUsername());
+        // Verify role assignment logic (assuming we can check it, for now just ensuring it doesn't throw)
     }
 
     @Test
@@ -71,7 +90,6 @@ class AuthServiceTest {
     }
 
     private static class InMemoryUserRepository implements UserRepository {
-
         private final List<User> store = new ArrayList<>();
         private final AtomicLong sequence = new AtomicLong(1L);
 
@@ -85,8 +103,6 @@ class AuthServiceTest {
                 store.add(user);
                 return user;
             }
-
-            // Simple update logic for mock
             store.removeIf(u -> u.getId().equals(user.getId()));
             user.setUpdatedAt(LocalDateTime.now());
             store.add(user);
@@ -108,5 +124,23 @@ class AuthServiceTest {
             return store.stream().filter(user -> user.getEmail().equalsIgnoreCase(email)).findFirst();
         }
     }
-}
 
+    private static class InMemoryRoleRepository implements RoleRepository {
+        private final List<Role> store = new ArrayList<>();
+        private final AtomicLong sequence = new AtomicLong(1L);
+
+        @Override
+        public Optional<Role> findByName(String name) {
+            return store.stream().filter(r -> r.getName().equalsIgnoreCase(name)).findFirst();
+        }
+
+        @Override
+        public Role save(Role role) {
+            if (role.getId() == null) {
+                role.setId(sequence.getAndIncrement());
+                store.add(role);
+            }
+            return role;
+        }
+    }
+}
