@@ -3,8 +3,8 @@ package com.tuan.ecommerce.modules.auth.application;
 import com.tuan.ecommerce.modules.auth.application.dto.LoginRequest;
 import com.tuan.ecommerce.modules.auth.application.dto.RegisterRequest;
 import com.tuan.ecommerce.modules.auth.domain.User;
-import com.tuan.ecommerce.modules.auth.infrastructure.AuthMapper;
-import com.tuan.ecommerce.modules.auth.infrastructure.UserRepository;
+import com.tuan.ecommerce.modules.auth.infrastructure.mapper.AuthMapper;
+import com.tuan.ecommerce.modules.auth.infrastructure.persistence.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -86,7 +86,10 @@ class AuthServiceTest {
                 return user;
             }
 
+            // Simple update logic for mock
+            store.removeIf(u -> u.getId().equals(user.getId()));
             user.setUpdatedAt(LocalDateTime.now());
+            store.add(user);
             return user;
         }
 

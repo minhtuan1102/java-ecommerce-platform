@@ -63,9 +63,9 @@ Day 3 - Khung module auth
 Deliverable: project compile với module auth mới.
 
 Day 4 - Entity mapping
-- [ ] Hoàn thiện entity `User`, `Role`, `RefreshToken`.
-- [ ] Map quan hệ user-role và user-refresh-token.
-- [ ] Tạo JPA repository tương ứng.
+- [x] Hoàn thiện entity `User`, `Role`, `RefreshToken`.
+- [x] Map quan hệ user-role và user-refresh-token.
+- [x] Tạo JPA repository tương ứng.
 Deliverable: đọc/ghi user + role qua repository.
 
 Day 5 - API skeleton

@@ -1,4 +1,4 @@
-package com.tuan.ecommerce.modules.auth.infrastructure;
+package com.tuan.ecommerce.modules.auth.infrastructure.persistence.user;
 
 import com.tuan.ecommerce.modules.auth.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
