@@ -25,6 +25,7 @@ public class AuthDataInitializer implements CommandLineRunner {
         // Seed roles
         Role userRole = seedRole("ROLE_USER");
         Role adminRole = seedRole("ROLE_ADMIN");
+        Role sellerRole = seedRole("ROLE_SELLER");
 
         // Seed admin user if not exists
         String adminEmail = "admin@ecommerce.com";
@@ -37,6 +38,19 @@ public class AuthDataInitializer implements CommandLineRunner {
                     .build();
             userRepository.save(admin);
             System.out.println("Seed: Created default admin user");
+        }
+
+        // Seed seller user if not exists
+        String sellerEmail = "seller@ecommerce.com";
+        if (!userRepository.existsByEmailIgnoreCase(sellerEmail)) {
+            User seller = User.builder()
+                    .username("seller")
+                    .email(sellerEmail)
+                    .password("seller123")
+                    .roles(Set.of(userRole, sellerRole))
+                    .build();
+            userRepository.save(seller);
+            System.out.println("Seed: Created default seller user");
         }
     }
 

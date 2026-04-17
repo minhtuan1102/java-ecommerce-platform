@@ -8,7 +8,10 @@ import com.tuan.ecommerce.modules.auth.domain.User;
 import com.tuan.ecommerce.modules.auth.infrastructure.mapper.AuthMapper;
 import com.tuan.ecommerce.modules.auth.infrastructure.persistence.role.RoleRepository;
 import com.tuan.ecommerce.modules.auth.infrastructure.persistence.user.UserRepository;
+import com.tuan.ecommerce.modules.auth.infrastructure.security.JwtService;
+import com.tuan.ecommerce.modules.auth.infrastructure.security.CustomUserDetails;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,11 +24,15 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final AuthMapper authMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, RoleRepository roleRepository, AuthMapper authMapper) {
+    public AuthService(UserRepository userRepository, RoleRepository roleRepository, AuthMapper authMapper, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.authMapper = authMapper;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -45,10 +52,12 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Default role not found"));
 
         User user = authMapper.toEntity(request);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRoles(Set.of(userRole));
         
         User savedUser = userRepository.save(user);
-        return authMapper.toResponse(savedUser, "Register success");
+        String jwtToken = jwtService.generateToken(new CustomUserDetails(savedUser));
+        return authMapper.toResponse(savedUser, jwtToken, null, "Register success");
     }
 
     @Transactional(readOnly = true)
@@ -58,14 +67,15 @@ public class AuthService {
         User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
 
-        if (!user.getPassword().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword()) && !user.getPassword().equals(request.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
-        return authMapper.toResponse(user, "Login success");
+        String jwtToken = jwtService.generateToken(new CustomUserDetails(user));
+        return authMapper.toResponse(user, jwtToken, null, "Login success");
     }
 
     public void logout() {
-        // Placeholder for refresh token invalidation when JWT is added.
+        // Placeholder for refresh token invalidation
     }
 }

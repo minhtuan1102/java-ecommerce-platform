@@ -16,11 +16,13 @@ public class AuthMapper {
                 .build();
     }
 
-    public AuthResponse toResponse(User user, String message) {
+    public AuthResponse toResponse(User user, String accessToken, String refreshToken, String message) {
         return AuthResponse.builder()
                 .id(user.getId())
-                .username(user.getUsername())
+                .username(user.getUsername()) // This returns email because of UserDetails implementation
                 .email(user.getEmail())
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .createdAt(user.getCreatedAt())
                 .message(message)
                 .build();

@@ -7,9 +7,12 @@ import com.tuan.ecommerce.modules.auth.domain.User;
 import com.tuan.ecommerce.modules.auth.infrastructure.mapper.AuthMapper;
 import com.tuan.ecommerce.modules.auth.infrastructure.persistence.role.RoleRepository;
 import com.tuan.ecommerce.modules.auth.infrastructure.persistence.user.UserRepository;
+import com.tuan.ecommerce.modules.auth.infrastructure.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -20,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthServiceTest {
 
@@ -31,7 +33,9 @@ class AuthServiceTest {
     void setUp() {
         roleRepository = new InMemoryRoleRepository();
         roleRepository.save(Role.builder().name("ROLE_USER").build());
-        authService = new AuthService(new InMemoryUserRepository(), roleRepository, new AuthMapper());
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        JwtService jwtService = new JwtService();
+        authService = new AuthService(new InMemoryUserRepository(), roleRepository, new AuthMapper(), passwordEncoder, jwtService);
     }
 
     @Test
@@ -44,7 +48,6 @@ class AuthServiceTest {
         var result = authService.register(request);
 
         assertEquals("john", result.getUsername());
-        // Verify role assignment logic (assuming we can check it, for now just ensuring it doesn't throw)
     }
 
     @Test
