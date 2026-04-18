@@ -3,6 +3,8 @@ package com.tuan.ecommerce.modules.auth.application;
 import com.tuan.ecommerce.modules.auth.application.dto.AuthResponse;
 import com.tuan.ecommerce.modules.auth.application.dto.LoginRequest;
 import com.tuan.ecommerce.modules.auth.application.dto.RegisterRequest;
+import com.tuan.ecommerce.modules.auth.application.dto.RefreshTokenRequest;
+import com.tuan.ecommerce.modules.auth.domain.RefreshToken;
 import com.tuan.ecommerce.modules.auth.domain.Role;
 import com.tuan.ecommerce.modules.auth.domain.User;
 import com.tuan.ecommerce.modules.auth.infrastructure.mapper.AuthMapper;
@@ -26,13 +28,15 @@ public class AuthService {
     private final AuthMapper authMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
-    public AuthService(UserRepository userRepository, RoleRepository roleRepository, AuthMapper authMapper, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(UserRepository userRepository, RoleRepository roleRepository, AuthMapper authMapper, PasswordEncoder passwordEncoder, JwtService jwtService, RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.authMapper = authMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional
@@ -57,10 +61,12 @@ public class AuthService {
         
         User savedUser = userRepository.save(user);
         String jwtToken = jwtService.generateToken(new CustomUserDetails(savedUser));
-        return authMapper.toResponse(savedUser, jwtToken, null, "Register success");
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser.getId());
+        
+        return authMapper.toResponse(savedUser, jwtToken, refreshToken.getToken(), "Register success");
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         String normalizedEmail = request.getEmail().trim().toLowerCase();
 
@@ -72,10 +78,27 @@ public class AuthService {
         }
 
         String jwtToken = jwtService.generateToken(new CustomUserDetails(user));
-        return authMapper.toResponse(user, jwtToken, null, "Login success");
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        
+        return authMapper.toResponse(user, jwtToken, refreshToken.getToken(), "Login success");
     }
 
-    public void logout() {
-        // Placeholder for refresh token invalidation
+    @Transactional
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+        return refreshTokenService.findByToken(request.getRefreshToken())
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String accessToken = jwtService.generateToken(new CustomUserDetails(user));
+                    return authMapper.toResponse(user, accessToken, request.getRefreshToken(), "Token refreshed successfully");
+                })
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Refresh token is not in database!"));
+    }
+
+    @Transactional
+    public void logout(String email) {
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        refreshTokenService.deleteByUserId(user.getId());
     }
 }

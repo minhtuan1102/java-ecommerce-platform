@@ -35,7 +35,8 @@ class AuthServiceTest {
         roleRepository.save(Role.builder().name("ROLE_USER").build());
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         JwtService jwtService = new JwtService();
-        authService = new AuthService(new InMemoryUserRepository(), roleRepository, new AuthMapper(), passwordEncoder, jwtService);
+        RefreshTokenService refreshTokenService = org.mockito.Mockito.mock(RefreshTokenService.class);
+        authService = new AuthService(new InMemoryUserRepository(), roleRepository, new AuthMapper(), passwordEncoder, jwtService, refreshTokenService);
     }
 
     @Test
@@ -110,6 +111,11 @@ class AuthServiceTest {
             user.setUpdatedAt(LocalDateTime.now());
             store.add(user);
             return user;
+        }
+
+        @Override
+        public Optional<User> findById(Long id) {
+            return store.stream().filter(user -> user.getId().equals(id)).findFirst();
         }
 
         @Override
