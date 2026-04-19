@@ -36,6 +36,8 @@ class AuthServiceTest {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         JwtService jwtService = new JwtService();
         RefreshTokenService refreshTokenService = org.mockito.Mockito.mock(RefreshTokenService.class);
+        com.tuan.ecommerce.modules.auth.domain.RefreshToken dummyToken = com.tuan.ecommerce.modules.auth.domain.RefreshToken.builder().token("dummy-refresh-token").build();
+        org.mockito.Mockito.when(refreshTokenService.createRefreshToken(org.mockito.ArgumentMatchers.anyLong())).thenReturn(dummyToken);
         authService = new AuthService(new InMemoryUserRepository(), roleRepository, new AuthMapper(), passwordEncoder, jwtService, refreshTokenService);
     }
 

@@ -27,7 +27,7 @@ public class ShopController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('SELLER')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ShopResponse> createShop(@Valid @RequestBody CreateShopRequest request, Principal principal) {
         ShopResponse response = shopService.createShop(request, principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

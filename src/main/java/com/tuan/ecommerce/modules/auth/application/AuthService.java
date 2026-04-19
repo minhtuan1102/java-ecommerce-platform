@@ -56,8 +56,10 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Default role not found"));
 
         User user = authMapper.toEntity(request);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRoles(Set.of(userRole));
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        java.util.Set<com.tuan.ecommerce.modules.auth.domain.Role> roles = new java.util.HashSet<>();
+        roles.add(userRole);
+        user.setRoles(roles);
         
         User savedUser = userRepository.save(user);
         String jwtToken = jwtService.generateToken(new CustomUserDetails(savedUser));

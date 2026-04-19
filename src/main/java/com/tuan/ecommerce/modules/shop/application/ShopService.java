@@ -1,6 +1,8 @@
 package com.tuan.ecommerce.modules.shop.application;
 
+import com.tuan.ecommerce.modules.auth.domain.Role;
 import com.tuan.ecommerce.modules.auth.domain.User;
+import com.tuan.ecommerce.modules.auth.infrastructure.persistence.role.RoleRepository;
 import com.tuan.ecommerce.modules.auth.infrastructure.persistence.user.UserRepository;
 import com.tuan.ecommerce.modules.shop.application.dto.CreateShopRequest;
 import com.tuan.ecommerce.modules.shop.application.dto.ShopResponse;
@@ -19,11 +21,13 @@ public class ShopService {
 
     private final ShopRepository shopRepository;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final ShopMapper shopMapper;
 
-    public ShopService(ShopRepository shopRepository, UserRepository userRepository, ShopMapper shopMapper) {
+    public ShopService(ShopRepository shopRepository, UserRepository userRepository, RoleRepository roleRepository, ShopMapper shopMapper) {
         this.shopRepository = shopRepository;
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.shopMapper = shopMapper;
     }
 
@@ -42,6 +46,17 @@ public class ShopService {
 
         Shop shop = shopMapper.toEntity(request);
         shop.setOwner(owner);
+
+        // Add ROLE_SELLER to user if not present
+        boolean hasSellerRole = owner.getRoles().stream()
+                .anyMatch(role -> role.getName().equals("ROLE_SELLER"));
+        
+        if (!hasSellerRole) {
+            Role sellerRole = roleRepository.findByName("ROLE_SELLER")
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "ROLE_SELLER not found"));
+            owner.getRoles().add(sellerRole);
+            userRepository.save(owner);
+        }
 
         Shop savedShop = shopRepository.save(shop);
         return shopMapper.toResponse(savedShop);
@@ -64,3 +79,4 @@ public class ShopService {
         return shopMapper.toResponseList(shops);
     }
 }
+
