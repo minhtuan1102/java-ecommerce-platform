@@ -5,6 +5,7 @@ import com.tuan.ecommerce.modules.auth.domain.User;
 import com.tuan.ecommerce.modules.auth.infrastructure.persistence.role.RoleRepository;
 import com.tuan.ecommerce.modules.auth.infrastructure.persistence.user.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -14,10 +15,12 @@ public class AuthDataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthDataInitializer(UserRepository userRepository, RoleRepository roleRepository) {
+    public AuthDataInitializer(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -33,7 +36,7 @@ public class AuthDataInitializer implements CommandLineRunner {
             User admin = User.builder()
                     .username("admin")
                     .email(adminEmail)
-                    .password("admin123") // Will be hashed in Sprint 2
+                    .password(passwordEncoder.encode("admin123"))
                     .roles(Set.of(userRole, adminRole))
                     .build();
             userRepository.save(admin);
@@ -46,7 +49,7 @@ public class AuthDataInitializer implements CommandLineRunner {
             User seller = User.builder()
                     .username("seller")
                     .email(sellerEmail)
-                    .password("seller123")
+                    .password(passwordEncoder.encode("seller123"))
                     .roles(Set.of(userRole, sellerRole))
                     .build();
             userRepository.save(seller);
