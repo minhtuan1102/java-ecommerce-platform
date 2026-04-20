@@ -40,6 +40,12 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getShopOrders(principal.getName()));
     }
 
+    @GetMapping("/{orderId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long orderId, Principal principal) {
+        return ResponseEntity.ok(orderService.getOrderById(orderId, principal.getName()));
+    }
+
     @PatchMapping("/{orderId}/status")
     @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
     public ResponseEntity<OrderResponse> updateOrderStatus(
@@ -47,5 +53,11 @@ public class OrderController {
             @RequestParam OrderStatus status,
             Principal principal) {
         return ResponseEntity.ok(orderService.updateOrderStatus(orderId, status, principal.getName()));
+    }
+
+    @PatchMapping("/{orderId}/cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> cancelMyOrder(@PathVariable Long orderId, Principal principal) {
+        return ResponseEntity.ok(orderService.cancelMyOrder(orderId, principal.getName()));
     }
 }

@@ -22,44 +22,66 @@ const MyOrders = () => {
   if (loading) return <div className="p-8 text-center text-gray-500 italic">Đang tải lịch sử đơn hàng...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-8 text-gray-800 uppercase">Đơn mua của tôi</h1>
+    <div className="max-w-4xl mx-auto p-6 pb-20">
+      <div className="mb-10">
+        <h1 className="text-3xl font-black text-gray-800 tracking-tight uppercase">Đơn mua của tôi</h1>
+        <div className="h-1.5 w-12 bg-primary mt-2 rounded-full"></div>
+      </div>
       
       {orders.length === 0 ? (
-        <div className="bg-white p-12 text-center rounded-lg border border-dashed text-gray-400">
-          Bạn chưa có đơn hàng nào.
+        <div className="bg-white p-20 text-center rounded-3xl shadow-sm border-2 border-dashed border-gray-100 flex flex-col items-center">
+          <div className="text-6xl mb-4 grayscale opacity-20">📦</div>
+          <h3 className="text-xl font-bold text-gray-400">Chưa có đơn hàng nào</h3>
+          <p className="text-gray-300 text-sm mt-2 max-w-xs">Hãy khám phá các sản phẩm tuyệt vời của E-Market ngay!</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {orders.map((order) => (
-            <div key={order.id} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-              <div className="bg-gray-50 px-6 py-3 border-b flex justify-between items-center">
-                <span className="font-bold text-gray-700">{order.shopName}</span>
-                <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
-                  order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' : 
-                  order.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
+            <div key={order.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all">
+              <div className="bg-gray-50/50 px-8 py-4 border-b border-gray-100 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-black uppercase">
+                    {order.shopName?.[0]}
+                  </div>
+                  <span className="font-black text-gray-800 text-sm uppercase tracking-tight">{order.shopName}</span>
+                </div>
+                <div className={`text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-sm ${
+                  order.status === 'DELIVERED' ? 'bg-green-500 text-white' : 
+                  order.status === 'CANCELLED' ? 'bg-red-500 text-white' : 'bg-orange-400 text-white'
                 }`}>
                   {order.status}
-                </span>
+                </div>
               </div>
               
-              <div className="p-6">
+              <div className="p-8">
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex gap-4 mb-4 last:mb-0">
-                    <div className="w-16 h-16 bg-gray-100 rounded border"></div>
-                    <div className="flex-grow">
-                      <h4 className="text-sm font-medium text-gray-800">{item.productName}</h4>
-                      <p className="text-xs text-gray-400">Phân loại: {item.tierIndex} x {item.quantity}</p>
+                  <div key={item.id} className="flex gap-6 mb-6 last:mb-0 items-center group">
+                    <div className="w-16 h-16 bg-gray-50 rounded-2xl border border-gray-100 flex-shrink-0 overflow-hidden group-hover:border-primary/20 transition-all">
+                      <img src="https://via.placeholder.com/64" alt={item.productName} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
                     </div>
-                    <div className="text-sm font-bold text-primary">₫{item.price?.toLocaleString()}</div>
+                    <div className="flex-grow">
+                      <h4 className="text-sm font-black text-gray-800 line-clamp-1 group-hover:text-primary transition">{item.productName}</h4>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                        Phân loại: {item.tierIndex || 'Mặc định'} <span className="mx-2 text-gray-200">|</span> Số lượng: {item.quantity}
+                      </p>
+                    </div>
+                    <div className="text-lg font-black text-primary flex items-baseline gap-0.5">
+                      <span className="text-[10px]">₫</span>
+                      {item.price?.toLocaleString()}
+                    </div>
                   </div>
                 ))}
                 
-                <div className="mt-4 pt-4 border-t flex justify-between items-center">
-                  <div className="text-xs text-gray-400">Mã đơn: #{order.id}</div>
-                  <div>
-                    <span className="text-gray-500 mr-2">Thành tiền:</span>
-                    <span className="text-xl font-bold text-primary">₫{order.totalAmount?.toLocaleString()}</span>
+                <div className="mt-8 pt-6 border-t border-gray-50 flex justify-between items-end">
+                  <div className="bg-gray-50 px-4 py-1 rounded-full border border-gray-100 text-[10px] font-black text-gray-300 uppercase tracking-tighter">
+                    Mã đơn: #{order.id}
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-3 block mb-1">Tổng số tiền</span>
+                    <div className="text-3xl font-black text-primary leading-none flex items-baseline gap-1 justify-end">
+                      <span className="text-sm">₫</span>
+                      {order.totalAmount?.toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </div>

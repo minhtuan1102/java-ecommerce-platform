@@ -99,4 +99,35 @@ public class CartService {
         Cart savedCart = cartRepository.save(cart);
         return cartMapper.toResponse(savedCart);
     }
+
+    @Transactional
+    public CartResponse updateItemQuantity(Long cartItemId, Integer quantity, String userEmail) {
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Cart cart = cartRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found"));
+
+        CartItem cartItem = cart.getItems().stream()
+                .filter(item -> item.getId().equals(cartItemId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found in cart"));
+
+        cartItem.setQuantity(quantity);
+        Cart savedCart = cartRepository.save(cart);
+        return cartMapper.toResponse(savedCart);
+    }
+
+    @Transactional
+    public CartResponse clearCart(String userEmail) {
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Cart cart = cartRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found"));
+
+        cart.getItems().clear();
+        Cart savedCart = cartRepository.save(cart);
+        return cartMapper.toResponse(savedCart);
+    }
 }

@@ -132,8 +132,23 @@ class AuthServiceTest {
         }
 
         @Override
+        public boolean existsByUsernameIgnoreCaseAndIdNot(String username, Long id) {
+            return store.stream().anyMatch(user -> user.getUsername().equalsIgnoreCase(username) && !user.getId().equals(id));
+        }
+
+        @Override
+        public boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id) {
+            return store.stream().anyMatch(user -> user.getEmail().equalsIgnoreCase(email) && !user.getId().equals(id));
+        }
+
+        @Override
         public Optional<User> findByEmailIgnoreCase(String email) {
             return store.stream().filter(user -> user.getEmail().equalsIgnoreCase(email)).findFirst();
+        }
+
+        @Override
+        public List<User> findAll() {
+            return new ArrayList<>(store);
         }
     }
 

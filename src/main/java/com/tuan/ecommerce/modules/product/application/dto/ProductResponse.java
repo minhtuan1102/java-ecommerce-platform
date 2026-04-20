@@ -19,6 +19,11 @@ public class ProductResponse {
     private String description;
     private String brand;
     private boolean active;
+    private String approvalStatus;
+    private String reviewNote;
+    private Long approvedByUserId;
+    private String approvedByUsername;
+    private LocalDateTime approvedAt;
     private Long categoryId;
     private String categoryName;
     private Long shopId;

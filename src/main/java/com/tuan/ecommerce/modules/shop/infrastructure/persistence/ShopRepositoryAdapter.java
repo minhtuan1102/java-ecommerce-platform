@@ -39,4 +39,9 @@ public class ShopRepositoryAdapter implements ShopRepository {
     public boolean existsByNameIgnoreCase(String name) {
         return shopJpaRepository.existsByNameIgnoreCase(name);
     }
+
+    @Override
+    public void delete(Shop shop) {
+        shopJpaRepository.delete(shop);
+    }
 }

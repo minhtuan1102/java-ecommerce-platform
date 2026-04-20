@@ -1,6 +1,7 @@
 package com.tuan.ecommerce.modules.product.infrastructure.persistence;
 
 import com.tuan.ecommerce.modules.product.domain.Product;
+import com.tuan.ecommerce.modules.product.domain.ProductApprovalStatus;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -36,8 +37,18 @@ public class ProductRepositoryAdapter implements ProductRepository {
     }
 
     @Override
+    public List<Product> findByShopIdAndApprovalStatusAndActiveTrue(Long shopId, ProductApprovalStatus approvalStatus) {
+        return productJpaRepository.findByShopIdAndApprovalStatusAndActiveTrue(shopId, approvalStatus);
+    }
+
+    @Override
     public List<Product> findByCategoryId(Long categoryId) {
         return productJpaRepository.findByCategoryId(categoryId);
+    }
+
+    @Override
+    public List<Product> findByApprovalStatusAndActiveTrue(ProductApprovalStatus approvalStatus) {
+        return productJpaRepository.findByApprovalStatusAndActiveTrue(approvalStatus);
     }
 
     @Override

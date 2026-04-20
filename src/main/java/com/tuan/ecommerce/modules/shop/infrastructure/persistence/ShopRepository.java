@@ -11,4 +11,5 @@ public interface ShopRepository {
     Optional<Shop> findByOwnerId(Long ownerId);
     List<Shop> findAll();
     boolean existsByNameIgnoreCase(String name);
+    void delete(Shop shop);
 }

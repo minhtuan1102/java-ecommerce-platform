@@ -11,6 +11,10 @@ import Home from './pages/Home';
 import Cart from './pages/Cart';
 import MyOrders from './pages/MyOrders';
 import ShopOrders from './pages/ShopOrders';
+import Profile from './pages/Profile';
+import AdminUsers from './pages/AdminUsers';
+import AdminProducts from './pages/AdminProducts';
+import ProductDetail from './pages/ProductDetail';
 
 const ProtectedRoute = ({ children, role }) => {
   const { user } = useAuth();
@@ -48,6 +52,26 @@ function App() {
             <Route path="/my-orders" element={
               <ProtectedRoute>
                 <MyOrders />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/products/:id" element={
+              <ProtectedRoute>
+                <ProductDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute role="ROLE_ADMIN">
+                <AdminUsers />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/products" element={
+              <ProtectedRoute role="ROLE_ADMIN">
+                <AdminProducts />
               </ProtectedRoute>
             } />
             <Route path="/my-shop/orders" element={

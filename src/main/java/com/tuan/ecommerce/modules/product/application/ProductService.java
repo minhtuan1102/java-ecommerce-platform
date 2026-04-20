@@ -6,7 +6,9 @@ import com.tuan.ecommerce.modules.category.domain.Category;
 import com.tuan.ecommerce.modules.category.infrastructure.persistence.CategoryRepository;
 import com.tuan.ecommerce.modules.product.application.dto.CreateProductRequest;
 import com.tuan.ecommerce.modules.product.application.dto.ProductResponse;
+import com.tuan.ecommerce.modules.product.application.dto.ReviewProductRequest;
 import com.tuan.ecommerce.modules.product.domain.Product;
+import com.tuan.ecommerce.modules.product.domain.ProductApprovalStatus;
 import com.tuan.ecommerce.modules.product.domain.ProductImage;
 import com.tuan.ecommerce.modules.product.domain.ProductSKU;
 import com.tuan.ecommerce.modules.product.infrastructure.mapper.ProductMapper;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -53,6 +56,10 @@ public class ProductService {
         Product product = productMapper.toEntity(request);
         product.setShop(shop);
         product.setCategory(category);
+        product.setApprovalStatus(ProductApprovalStatus.PENDING);
+        product.setReviewNote("Waiting for admin approval");
+        product.setApprovedBy(null);
+        product.setApprovedAt(null);
 
         // Map Images
         if (request.getImageUrls() != null) {
@@ -82,6 +89,74 @@ public class ProductService {
         return productMapper.toResponse(savedProduct);
     }
 
+    @Transactional
+    public ProductResponse updateProduct(Long productId, CreateProductRequest request, String ownerEmail) {
+        User owner = userRepository.findByEmailIgnoreCase(ownerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        if (!product.getShop().getOwner().getId().equals(owner.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to update this product");
+        }
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+
+        product.setName(request.getName().trim());
+        product.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
+        product.setBrand(request.getBrand() != null ? request.getBrand().trim() : null);
+        product.setCategory(category);
+        product.setApprovalStatus(ProductApprovalStatus.PENDING);
+        product.setReviewNote("Product updated and waiting for admin approval");
+        product.setApprovedBy(null);
+        product.setApprovedAt(null);
+
+        product.getImages().clear();
+        if (request.getImageUrls() != null) {
+            List<ProductImage> images = request.getImageUrls().stream()
+                    .map(url -> ProductImage.builder()
+                            .product(product)
+                            .url(url)
+                            .main(request.getImageUrls().indexOf(url) == 0)
+                            .build())
+                    .collect(Collectors.toList());
+            product.getImages().addAll(images);
+        }
+
+        product.getSkus().clear();
+        List<ProductSKU> skus = request.getSkus().stream()
+                .map(skuReq -> ProductSKU.builder()
+                        .product(product)
+                        .skuCode(skuReq.getSkuCode())
+                        .tierIndex(skuReq.getTierIndex())
+                        .price(skuReq.getPrice())
+                        .stock(skuReq.getStock())
+                        .build())
+                .collect(Collectors.toList());
+        product.getSkus().addAll(skus);
+
+        Product updatedProduct = productRepository.save(product);
+        return productMapper.toResponse(updatedProduct);
+    }
+
+    @Transactional
+    public void deleteProduct(Long productId, String ownerEmail) {
+        User owner = userRepository.findByEmailIgnoreCase(ownerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        if (!product.getShop().getOwner().getId().equals(owner.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to delete this product");
+        }
+
+        product.setActive(false);
+        productRepository.save(product);
+    }
+
     @Transactional(readOnly = true)
     public ProductResponse getProduct(Long id) {
         Product product = productRepository.findById(id)
@@ -97,7 +172,7 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<ProductResponse> getProductsByShop(Long shopId) {
-        List<Product> products = productRepository.findByShopId(shopId);
+        List<Product> products = productRepository.findByShopIdAndApprovalStatusAndActiveTrue(shopId, ProductApprovalStatus.APPROVED);
         return productMapper.toResponseList(products);
     }
 
@@ -105,5 +180,69 @@ public class ProductService {
     public List<ProductResponse> searchProducts(String name, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {
         List<Product> products = productRepository.searchProducts(name, categoryId, minPrice, maxPrice);
         return productMapper.toResponseList(products);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getPendingProductsForAdmin() {
+        List<Product> products = productRepository.findByApprovalStatusAndActiveTrue(ProductApprovalStatus.PENDING);
+        return productMapper.toResponseList(products);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getProductsForMyShop(String ownerEmail) {
+        User owner = userRepository.findByEmailIgnoreCase(ownerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Shop shop = shopRepository.findByOwnerId(owner.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Shop not found"));
+
+        return productMapper.toResponseList(productRepository.findByShopId(shop.getId()));
+    }
+
+    @Transactional
+    public ProductResponse approveProduct(Long productId, String adminEmail, ReviewProductRequest request) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        if (!product.isActive()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot approve an inactive product");
+        }
+
+        User admin = userRepository.findByEmailIgnoreCase(adminEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        product.setApprovalStatus(ProductApprovalStatus.APPROVED);
+        product.setReviewNote(normalizeReviewNote(request != null ? request.getReviewNote() : null, "Approved"));
+        product.setApprovedBy(admin);
+        product.setApprovedAt(LocalDateTime.now());
+
+        return productMapper.toResponse(productRepository.save(product));
+    }
+
+    @Transactional
+    public ProductResponse rejectProduct(Long productId, String adminEmail, ReviewProductRequest request) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        if (!product.isActive()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot reject an inactive product");
+        }
+
+        User admin = userRepository.findByEmailIgnoreCase(adminEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        product.setApprovalStatus(ProductApprovalStatus.REJECTED);
+        product.setReviewNote(normalizeReviewNote(request != null ? request.getReviewNote() : null, "Rejected"));
+        product.setApprovedBy(admin);
+        product.setApprovedAt(LocalDateTime.now());
+
+        return productMapper.toResponse(productRepository.save(product));
+    }
+
+    private String normalizeReviewNote(String note, String fallback) {
+        if (note == null || note.isBlank()) {
+            return fallback;
+        }
+        return note.trim();
     }
 }

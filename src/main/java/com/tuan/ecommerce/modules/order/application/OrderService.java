@@ -126,6 +126,52 @@ public class OrderService {
         return orderMapper.toResponseList(orderRepository.findByShopId(shop.getId()));
     }
 
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(Long orderId, String userEmail) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        boolean isAdmin = user.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+        boolean isBuyer = order.getUser().getId().equals(user.getId());
+        boolean isShopOwner = order.getShop().getOwner().getId().equals(user.getId());
+        if (!isAdmin && !isBuyer && !isShopOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to view this order");
+        }
+
+        return orderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse cancelMyOrder(Long orderId, String userEmail) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to cancel this order");
+        }
+
+        if (order.getStatus() != com.tuan.ecommerce.modules.order.domain.OrderStatus.PENDING
+                && order.getStatus() != com.tuan.ecommerce.modules.order.domain.OrderStatus.PROCESSING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order cannot be cancelled at current status");
+        }
+
+        for (OrderItem item : order.getItems()) {
+            ProductSKU sku = skuRepository.findByIdWithLock(item.getSku().getId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SKU not found"));
+            sku.setStock(sku.getStock() + item.getQuantity());
+            skuRepository.save(sku);
+        }
+
+        order.setStatus(com.tuan.ecommerce.modules.order.domain.OrderStatus.CANCELLED);
+        return orderMapper.toResponse(orderRepository.save(order));
+    }
+
     @Transactional
     public OrderResponse updateOrderStatus(Long orderId, com.tuan.ecommerce.modules.order.domain.OrderStatus status, String userEmail) {
         Order order = orderRepository.findById(orderId)

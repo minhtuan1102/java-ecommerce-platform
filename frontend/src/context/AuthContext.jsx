@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useCallback, useState, useContext } from 'react';
 import api from '../api/axios';
 
 const AuthContext = createContext(null);
@@ -17,19 +17,19 @@ export const AuthProvider = ({ children }) => {
   
   const [loading] = useState(false);
 
-  const login = (userData, accessToken, refreshToken) => {
+  const login = useCallback((userData, accessToken, refreshToken) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
-  };
+  }, []);
 
-  const updateUser = (userData) => {
+  const updateUser = useCallback((userData) => {
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await api.post('/auth/logout');
     } catch (error) {
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('user');
       setUser(null);
     }
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>

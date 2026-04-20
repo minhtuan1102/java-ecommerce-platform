@@ -6,7 +6,9 @@ import com.tuan.ecommerce.modules.auth.infrastructure.persistence.role.RoleRepos
 import com.tuan.ecommerce.modules.auth.infrastructure.persistence.user.UserRepository;
 import com.tuan.ecommerce.modules.shop.application.dto.CreateShopRequest;
 import com.tuan.ecommerce.modules.shop.application.dto.ShopResponse;
+import com.tuan.ecommerce.modules.shop.application.dto.UpdateShopRequest;
 import com.tuan.ecommerce.modules.shop.domain.Shop;
+import com.tuan.ecommerce.modules.shop.domain.ShopStatus;
 import com.tuan.ecommerce.modules.shop.infrastructure.mapper.ShopMapper;
 import com.tuan.ecommerce.modules.shop.infrastructure.persistence.ShopRepository;
 import org.springframework.http.HttpStatus;
@@ -77,6 +79,44 @@ public class ShopService {
     public List<ShopResponse> getAllShops() {
         List<Shop> shops = shopRepository.findAll();
         return shopMapper.toResponseList(shops);
+    }
+
+    @Transactional(readOnly = true)
+    public ShopResponse getShopById(Long shopId) {
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Shop not found"));
+        return shopMapper.toResponse(shop);
+    }
+
+    @Transactional
+    public ShopResponse updateMyShop(UpdateShopRequest request, String ownerEmail) {
+        User owner = userRepository.findByEmailIgnoreCase(ownerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Shop shop = shopRepository.findByOwnerId(owner.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Shop not found"));
+
+        String normalizedName = request.getName().trim();
+        if (!shop.getName().equalsIgnoreCase(normalizedName)
+                && shopRepository.existsByNameIgnoreCase(normalizedName)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Shop name already exists");
+        }
+
+        shop.setName(normalizedName);
+        shop.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
+        return shopMapper.toResponse(shopRepository.save(shop));
+    }
+
+    @Transactional
+    public void deleteMyShop(String ownerEmail) {
+        User owner = userRepository.findByEmailIgnoreCase(ownerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Shop shop = shopRepository.findByOwnerId(owner.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Shop not found"));
+
+        shop.setStatus(ShopStatus.SUSPENDED);
+        shopRepository.save(shop);
     }
 }
 

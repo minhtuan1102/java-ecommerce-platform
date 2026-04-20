@@ -1,5 +1,6 @@
 package com.tuan.ecommerce.modules.product.domain;
 
+import com.tuan.ecommerce.modules.auth.domain.User;
 import com.tuan.ecommerce.modules.category.domain.Category;
 import com.tuan.ecommerce.modules.shop.domain.Shop;
 import jakarta.persistence.OneToMany;
@@ -12,6 +13,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -50,6 +53,21 @@ public class Product {
     @Column(name = "is_active")
     @Builder.Default
     private boolean active = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'PENDING'")
+    @Builder.Default
+    private ProductApprovalStatus approvalStatus = ProductApprovalStatus.PENDING;
+
+    @Column(name = "review_note", length = 500)
+    private String reviewNote;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approved_by")
+    private User approvedBy;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
@@ -95,6 +113,9 @@ public class Product {
     @PrePersist
     public void onCreate() {
         LocalDateTime now = LocalDateTime.now();
+        if (this.approvalStatus == null) {
+            this.approvalStatus = ProductApprovalStatus.PENDING;
+        }
         this.createdAt = now;
         this.updatedAt = now;
     }

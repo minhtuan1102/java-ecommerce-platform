@@ -3,11 +3,13 @@ package com.tuan.ecommerce.modules.cart.api;
 import com.tuan.ecommerce.modules.cart.application.CartService;
 import com.tuan.ecommerce.modules.cart.application.dto.AddToCartRequest;
 import com.tuan.ecommerce.modules.cart.application.dto.CartResponse;
+import com.tuan.ecommerce.modules.cart.application.dto.UpdateCartItemRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,5 +44,19 @@ public class CartController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CartResponse> removeItem(@PathVariable Long itemId, Principal principal) {
         return ResponseEntity.ok(cartService.removeItem(itemId, principal.getName()));
+    }
+
+    @PatchMapping("/{itemId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CartResponse> updateItemQuantity(@PathVariable Long itemId,
+                                                           @Valid @RequestBody UpdateCartItemRequest request,
+                                                           Principal principal) {
+        return ResponseEntity.ok(cartService.updateItemQuantity(itemId, request.getQuantity(), principal.getName()));
+    }
+
+    @DeleteMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CartResponse> clearCart(Principal principal) {
+        return ResponseEntity.ok(cartService.clearCart(principal.getName()));
     }
 }

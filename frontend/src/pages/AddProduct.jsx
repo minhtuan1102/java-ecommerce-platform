@@ -90,7 +90,7 @@ const AddProduct = () => {
 
     try {
       await api.post('/products', payload);
-      alert('Đăng sản phẩm thành công!');
+      alert('Dang san pham thanh cong. San pham se cho Admin duyet truoc khi hien thi cong khai.');
       navigate('/my-shop');
     } catch (err) {
       setError(err.response?.data?.message || 'Có lỗi xảy ra khi đăng sản phẩm. Vui lòng kiểm tra lại.');
