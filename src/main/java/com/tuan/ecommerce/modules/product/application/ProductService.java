@@ -7,6 +7,8 @@ import com.tuan.ecommerce.modules.category.infrastructure.persistence.CategoryRe
 import com.tuan.ecommerce.modules.product.application.dto.CreateProductRequest;
 import com.tuan.ecommerce.modules.product.application.dto.ProductResponse;
 import com.tuan.ecommerce.modules.product.domain.Product;
+import com.tuan.ecommerce.modules.product.domain.ProductImage;
+import com.tuan.ecommerce.modules.product.domain.ProductSKU;
 import com.tuan.ecommerce.modules.product.infrastructure.mapper.ProductMapper;
 import com.tuan.ecommerce.modules.product.infrastructure.persistence.ProductRepository;
 import com.tuan.ecommerce.modules.shop.domain.Shop;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -51,6 +54,30 @@ public class ProductService {
         product.setShop(shop);
         product.setCategory(category);
 
+        // Map Images
+        if (request.getImageUrls() != null) {
+            List<ProductImage> images = request.getImageUrls().stream()
+                    .map(url -> ProductImage.builder()
+                            .product(product)
+                            .url(url)
+                            .main(request.getImageUrls().indexOf(url) == 0) // Giả định cái đầu tiên là ảnh chính
+                            .build())
+                    .collect(Collectors.toList());
+            product.setImages(images);
+        }
+
+        // Map SKUs
+        List<ProductSKU> skus = request.getSkus().stream()
+                .map(skuReq -> ProductSKU.builder()
+                        .product(product)
+                        .skuCode(skuReq.getSkuCode())
+                        .tierIndex(skuReq.getTierIndex())
+                        .price(skuReq.getPrice())
+                        .stock(skuReq.getStock())
+                        .build())
+                .collect(Collectors.toList());
+        product.setSkus(skus);
+
         Product savedProduct = productRepository.save(product);
         return productMapper.toResponse(savedProduct);
     }
@@ -71,6 +98,12 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductResponse> getProductsByShop(Long shopId) {
         List<Product> products = productRepository.findByShopId(shopId);
+        return productMapper.toResponseList(products);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> searchProducts(String name, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {
+        List<Product> products = productRepository.searchProducts(name, categoryId, minPrice, maxPrice);
         return productMapper.toResponseList(products);
     }
 }

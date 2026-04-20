@@ -8,8 +8,8 @@ import com.tuan.ecommerce.modules.cart.domain.Cart;
 import com.tuan.ecommerce.modules.cart.domain.CartItem;
 import com.tuan.ecommerce.modules.cart.infrastructure.mapper.CartMapper;
 import com.tuan.ecommerce.modules.cart.infrastructure.persistence.CartRepository;
-import com.tuan.ecommerce.modules.product.domain.Product;
-import com.tuan.ecommerce.modules.product.infrastructure.persistence.ProductRepository;
+import com.tuan.ecommerce.modules.product.domain.ProductSKU;
+import com.tuan.ecommerce.modules.product.infrastructure.persistence.ProductSkuRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,13 +22,13 @@ public class CartService {
 
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
-    private final ProductRepository productRepository;
+    private final ProductSkuRepository skuRepository;
     private final CartMapper cartMapper;
 
-    public CartService(CartRepository cartRepository, UserRepository userRepository, ProductRepository productRepository, CartMapper cartMapper) {
+    public CartService(CartRepository cartRepository, UserRepository userRepository, ProductSkuRepository skuRepository, CartMapper cartMapper) {
         this.cartRepository = cartRepository;
         this.userRepository = userRepository;
-        this.productRepository = productRepository;
+        this.skuRepository = skuRepository;
         this.cartMapper = cartMapper;
     }
 
@@ -37,8 +37,8 @@ public class CartService {
         User user = userRepository.findByEmailIgnoreCase(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+        ProductSKU sku = skuRepository.findById(request.getSkuId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SKU not found"));
 
         Cart cart = cartRepository.findByUserId(user.getId())
                 .orElseGet(() -> {
@@ -48,7 +48,7 @@ public class CartService {
                 });
 
         Optional<CartItem> existingItem = cart.getItems().stream()
-                .filter(item -> item.getProduct().getId().equals(product.getId()))
+                .filter(item -> item.getSku().getId().equals(sku.getId()))
                 .findFirst();
 
         if (existingItem.isPresent()) {
@@ -57,7 +57,7 @@ public class CartService {
         } else {
             CartItem newItem = CartItem.builder()
                     .cart(cart)
-                    .product(product)
+                    .sku(sku)
                     .quantity(request.getQuantity())
                     .build();
             cart.getItems().add(newItem);

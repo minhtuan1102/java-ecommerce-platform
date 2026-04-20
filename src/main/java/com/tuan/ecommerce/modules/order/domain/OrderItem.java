@@ -1,6 +1,6 @@
 package com.tuan.ecommerce.modules.order.domain;
 
-import com.tuan.ecommerce.modules.product.domain.Product;
+import com.tuan.ecommerce.modules.product.domain.ProductSKU;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -39,8 +39,8 @@ public class OrderItem {
     private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    @JoinColumn(name = "sku_id", nullable = false)
+    private ProductSKU sku;
 
     @Column(nullable = false)
     private Integer quantity;

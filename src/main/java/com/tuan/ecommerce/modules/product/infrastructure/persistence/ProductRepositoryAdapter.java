@@ -41,6 +41,11 @@ public class ProductRepositoryAdapter implements ProductRepository {
     }
 
     @Override
+    public List<Product> searchProducts(String name, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {
+        return productJpaRepository.searchProducts(name, categoryId, minPrice, maxPrice);
+    }
+
+    @Override
     public void delete(Product product) {
         productJpaRepository.delete(product);
     }

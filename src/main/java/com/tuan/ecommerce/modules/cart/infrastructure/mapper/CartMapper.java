@@ -22,11 +22,11 @@ public class CartMapper {
 
         // Group items by Shop ID
         Map<Long, List<CartItem>> itemsByShop = cart.getItems().stream()
-                .collect(Collectors.groupingBy(item -> item.getProduct().getShop().getId()));
+                .collect(Collectors.groupingBy(item -> item.getSku().getProduct().getShop().getId()));
 
         List<ShopCartResponse> shopCartResponses = itemsByShop.entrySet().stream().map(entry -> {
             Long shopId = entry.getKey();
-            String shopName = entry.getValue().get(0).getProduct().getShop().getName();
+            String shopName = entry.getValue().get(0).getSku().getProduct().getShop().getName();
             
             List<CartItemResponse> itemResponses = entry.getValue().stream().map(this::toItemResponse).collect(Collectors.toList());
             
@@ -54,12 +54,13 @@ public class CartMapper {
     }
 
     private CartItemResponse toItemResponse(CartItem item) {
-        BigDecimal subtotal = item.getProduct().getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+        BigDecimal subtotal = item.getSku().getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
         return CartItemResponse.builder()
                 .id(item.getId())
-                .productId(item.getProduct().getId())
-                .productName(item.getProduct().getName())
-                .price(item.getProduct().getPrice())
+                .skuId(item.getSku().getId())
+                .productName(item.getSku().getProduct().getName())
+                .tierIndex(item.getSku().getTierIndex())
+                .price(item.getSku().getPrice())
                 .quantity(item.getQuantity())
                 .subtotal(subtotal)
                 .build();

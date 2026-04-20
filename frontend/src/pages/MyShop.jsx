@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
 const MyShop = () => {
@@ -11,7 +12,7 @@ const MyShop = () => {
       try {
         const response = await api.get('/shops/my-shop');
         setShop(response.data);
-      } catch (err) {
+      } catch {
         setError('Không tìm thấy thông tin gian hàng hoặc bạn chưa đăng ký shop.');
       } finally {
         setLoading(false);
@@ -46,11 +47,11 @@ const MyShop = () => {
             </div>
 
             <div className="border-t pt-8 mt-4">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">Quản lý Sản phẩm (Sắp ra mắt)</h2>
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">Quản lý Sản phẩm</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="border-2 border-dashed border-gray-200 rounded-lg h-40 flex items-center justify-center text-gray-400 hover:border-primary hover:text-primary transition cursor-pointer">
-                  <span>+ Thêm sản phẩm đầu tiên</span>
-                </div>
+                <Link to="/my-shop/add-product" className="border-2 border-dashed border-primary rounded-lg h-40 flex items-center justify-center text-primary font-medium hover:bg-orange-50 transition cursor-pointer">
+                  + Thêm sản phẩm mới
+                </Link>
               </div>
             </div>
           </div>

@@ -13,8 +13,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class CartItemResponse {
     private Long id; // CartItem ID
-    private Long productId;
+    private Long skuId;
     private String productName;
+    private String tierIndex;
     private BigDecimal price;
     private Integer quantity;
     private BigDecimal subtotal;

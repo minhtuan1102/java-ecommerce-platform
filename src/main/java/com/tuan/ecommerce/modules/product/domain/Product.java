@@ -2,6 +2,8 @@ package com.tuan.ecommerce.modules.product.domain;
 
 import com.tuan.ecommerce.modules.category.domain.Category;
 import com.tuan.ecommerce.modules.shop.domain.Shop;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -19,8 +21,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -41,12 +44,12 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal price;
+    @Column(length = 100)
+    private String brand;
 
-    @Column(nullable = false)
+    @Column(name = "is_active")
     @Builder.Default
-    private Integer stock = 0;
+    private boolean active = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
@@ -56,11 +59,38 @@ public class Product {
     @JoinColumn(name = "shop_id", nullable = false)
     private Shop shop;
 
+    @Builder.Default
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductSKU> skus = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // Helper methods for compatibility with modules that haven't migrated to SKU yet
+    public java.math.BigDecimal getPrice() {
+        if (skus != null && !skus.isEmpty()) {
+            return skus.get(0).getPrice();
+        }
+        return java.math.BigDecimal.ZERO;
+    }
+
+    public Integer getStock() {
+        if (skus != null && !skus.isEmpty()) {
+            return skus.stream().mapToInt(ProductSKU::getStock).sum();
+        }
+        return 0;
+    }
+
+    public void setStock(Integer stock) {
+        // Dummy setter for compatibility
+    }
 
     @PrePersist
     public void onCreate() {

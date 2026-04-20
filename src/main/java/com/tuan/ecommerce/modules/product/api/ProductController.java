@@ -7,13 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
@@ -28,11 +22,15 @@ public class ProductController {
         this.productService = productService;
     }
 
-    @PostMapping
-    @PreAuthorize("hasRole('SELLER')")
-    public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody CreateProductRequest request, Principal principal) {
-        ProductResponse response = productService.createProduct(request, principal.getName());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    // --- PUBLIC ENDPOINTS (Cho người mua) ---
+
+    @GetMapping
+    public ResponseEntity<List<ProductResponse>> getAllProducts(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @RequestParam(required = false) java.math.BigDecimal maxPrice) {
+        return ResponseEntity.ok(productService.searchProducts(name, categoryId, minPrice, maxPrice));
     }
 
     @GetMapping("/{id}")
@@ -40,11 +38,17 @@ public class ProductController {
         return ResponseEntity.ok(productService.getProduct(id));
     }
 
-    @GetMapping
-    public ResponseEntity<List<ProductResponse>> getProducts(@RequestParam(required = false) Long shopId) {
-        if (shopId != null) {
-            return ResponseEntity.ok(productService.getProductsByShop(shopId));
-        }
-        return ResponseEntity.ok(productService.getAllProducts());
+    @GetMapping("/shop/{shopId}")
+    public ResponseEntity<List<ProductResponse>> getProductsByShop(@PathVariable Long shopId) {
+        return ResponseEntity.ok(productService.getProductsByShop(shopId));
+    }
+
+    // --- SELLER ENDPOINTS (Cho người bán) ---
+
+    @PostMapping
+    @PreAuthorize("hasRole('SELLER')")
+    public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody CreateProductRequest request, Principal principal) {
+        ProductResponse response = productService.createProduct(request, principal.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

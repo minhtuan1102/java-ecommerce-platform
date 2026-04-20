@@ -23,7 +23,7 @@ const RegisterShop = () => {
       
       // Sau khi tạo shop thành công, role của user trong DB đã là ROLE_SELLER.
       // Chúng ta cập nhật lại state của user ở Frontend để Navbar thay đổi nút.
-      const updatedUser = { ...user, roles: [...(user.roles || []), 'ROLE_SELLER'] };
+      const updatedUser = { ...user, roles: Array.from(new Set([...(user.roles || []), 'ROLE_SELLER'])) };
       updateUser(updatedUser);
       
       alert('Đăng ký gian hàng thành công! Bạn đã trở thành Người bán.');

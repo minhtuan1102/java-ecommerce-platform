@@ -20,8 +20,8 @@ const Login = () => {
     setError('');
     try {
       const response = await api.post('/auth/login', formData);
-      const { user, accessToken, refreshToken } = response.data;
-      login(user, accessToken, refreshToken);
+      const { id, username, email, roles, accessToken, refreshToken } = response.data;
+      login({ id, username, email, roles }, accessToken, refreshToken);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại.');

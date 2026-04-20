@@ -13,8 +13,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class OrderItemResponse {
     private Long id;
-    private Long productId;
+    private Long skuId;
     private String productName;
+    private String tierIndex;
     private Integer quantity;
     private BigDecimal price;
     private BigDecimal subtotal;

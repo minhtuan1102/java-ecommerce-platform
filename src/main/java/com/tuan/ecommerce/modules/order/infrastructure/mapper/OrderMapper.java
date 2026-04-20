@@ -36,8 +36,9 @@ public class OrderMapper {
         BigDecimal subtotal = item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
         return OrderItemResponse.builder()
                 .id(item.getId())
-                .productId(item.getProduct().getId())
-                .productName(item.getProduct().getName())
+                .skuId(item.getSku().getId())
+                .productName(item.getSku().getProduct().getName())
+                .tierIndex(item.getSku().getTierIndex())
                 .quantity(item.getQuantity())
                 .price(item.getPrice())
                 .subtotal(subtotal)

@@ -51,6 +51,7 @@ class AuthServiceTest {
         var result = authService.register(request);
 
         assertEquals("john", result.getUsername());
+        org.assertj.core.api.Assertions.assertThat(result.getRoles()).contains("ROLE_USER");
     }
 
     @Test

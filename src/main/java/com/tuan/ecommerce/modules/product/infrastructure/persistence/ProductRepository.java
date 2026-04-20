@@ -11,5 +11,6 @@ public interface ProductRepository {
     List<Product> findAll();
     List<Product> findByShopId(Long shopId);
     List<Product> findByCategoryId(Long categoryId);
+    List<Product> searchProducts(String name, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice);
     void delete(Product product);
 }
