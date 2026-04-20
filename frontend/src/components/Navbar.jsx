@@ -40,6 +40,15 @@ const Navbar = () => {
                   </div>
                   <span className="text-xs font-black text-dark group-hover:text-primary transition-colors tracking-widest uppercase">GIỎ HÀNG</span>
                 </Link>
+
+                <Link to="/my-orders" className="relative group flex items-center gap-2 ml-4">
+                  <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 group-hover:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                  <span className="text-xs font-black text-dark group-hover:text-primary transition-colors tracking-widest uppercase">ĐƠN MUA</span>
+                </Link>
                 
                 <div className="h-6 w-px bg-gray-100 mx-2"></div>
 

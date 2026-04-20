@@ -49,6 +49,19 @@ public class Order {
     @JoinColumn(name = "shop_id", nullable = false)
     private Shop shop;
 
+    @Column(name = "shipping_address", nullable = false)
+    @Builder.Default
+    private String shippingAddress = "";
+
+    @Column(name = "phone_number", nullable = false, length = 20)
+    @Builder.Default
+    private String phoneNumber = "";
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'COD'")
+    @Builder.Default
+    private PaymentMethod paymentMethod = PaymentMethod.COD;
+
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 

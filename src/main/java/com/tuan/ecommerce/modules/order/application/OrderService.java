@@ -5,6 +5,7 @@ import com.tuan.ecommerce.modules.auth.infrastructure.persistence.user.UserRepos
 import com.tuan.ecommerce.modules.cart.domain.Cart;
 import com.tuan.ecommerce.modules.cart.domain.CartItem;
 import com.tuan.ecommerce.modules.cart.infrastructure.persistence.CartRepository;
+import com.tuan.ecommerce.modules.order.application.dto.CheckoutRequest;
 import com.tuan.ecommerce.modules.order.application.dto.OrderResponse;
 import com.tuan.ecommerce.modules.order.domain.Order;
 import com.tuan.ecommerce.modules.order.domain.OrderItem;
@@ -46,7 +47,7 @@ public class OrderService {
     }
 
     @Transactional
-    public List<OrderResponse> checkout(String userEmail) {
+    public List<OrderResponse> checkout(String userEmail, CheckoutRequest request) {
         User user = userRepository.findByEmailIgnoreCase(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -70,6 +71,8 @@ public class OrderService {
             Order order = new Order();
             order.setUser(user);
             order.setShop(shopItems.get(0).getSku().getProduct().getShop());
+            order.setShippingAddress(request.getShippingAddress());
+            order.setPhoneNumber(request.getPhoneNumber());
             
             BigDecimal totalAmount = BigDecimal.ZERO;
             

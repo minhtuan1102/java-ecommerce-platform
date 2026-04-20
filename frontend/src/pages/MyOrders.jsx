@@ -72,7 +72,15 @@ const MyOrders = () => {
                   </div>
                 ))}
                 
-                <div className="mt-8 pt-6 border-t border-gray-50 flex justify-between items-end">
+                <div className="mt-6 p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+                  <h5 className="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-3">Thông tin nhận hàng</h5>
+                  <div className="space-y-1 text-sm font-medium text-gray-700">
+                    <p><span className="text-gray-400 mr-2">📍 Địa chỉ:</span> {order.shippingAddress || '---'}</p>
+                    <p><span className="text-gray-400 mr-2">📞 Điện thoại:</span> {order.phoneNumber || '---'}</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-gray-50 flex justify-between items-end">
                   <div className="bg-gray-50 px-4 py-1 rounded-full border border-gray-100 text-[10px] font-black text-gray-300 uppercase tracking-tighter">
                     Mã đơn: #{order.id}
                   </div>

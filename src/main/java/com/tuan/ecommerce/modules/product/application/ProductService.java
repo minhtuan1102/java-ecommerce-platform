@@ -1,5 +1,6 @@
 package com.tuan.ecommerce.modules.product.application;
 
+import com.tuan.ecommerce.common.dto.PageResponse;
 import com.tuan.ecommerce.modules.auth.domain.User;
 import com.tuan.ecommerce.modules.auth.infrastructure.persistence.user.UserRepository;
 import com.tuan.ecommerce.modules.category.domain.Category;
@@ -15,6 +16,9 @@ import com.tuan.ecommerce.modules.product.infrastructure.mapper.ProductMapper;
 import com.tuan.ecommerce.modules.product.infrastructure.persistence.ProductRepository;
 import com.tuan.ecommerce.modules.shop.domain.Shop;
 import com.tuan.ecommerce.modules.shop.infrastructure.persistence.ShopRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -183,6 +187,35 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<ProductResponse> searchProductsPage(String name,
+                                                            Long categoryId,
+                                                            java.math.BigDecimal minPrice,
+                                                            java.math.BigDecimal maxPrice,
+                                                            int page,
+                                                            int size,
+                                                            String sortBy,
+                                                            String sortDir) {
+        int normalizedSize = Math.max(15, Math.min(size, 20));
+        int normalizedPage = Math.max(page, 0);
+        String normalizedSortBy = resolveSortBy(sortBy);
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+
+        PageRequest pageable = PageRequest.of(normalizedPage, normalizedSize, Sort.by(direction, normalizedSortBy));
+        Page<Product> productPage = productRepository.searchProductsPage(name, categoryId, minPrice, maxPrice, pageable);
+        List<ProductResponse> content = productMapper.toResponseList(productPage.getContent());
+
+        return PageResponse.<ProductResponse>builder()
+                .content(content)
+                .page(productPage.getNumber())
+                .size(productPage.getSize())
+                .totalElements(productPage.getTotalElements())
+                .totalPages(productPage.getTotalPages())
+                .first(productPage.isFirst())
+                .last(productPage.isLast())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public List<ProductResponse> getPendingProductsForAdmin() {
         List<Product> products = productRepository.findByApprovalStatusAndActiveTrue(ProductApprovalStatus.PENDING);
         return productMapper.toResponseList(products);
@@ -244,5 +277,16 @@ public class ProductService {
             return fallback;
         }
         return note.trim();
+    }
+
+    private String resolveSortBy(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return "createdAt";
+        }
+
+        return switch (sortBy) {
+            case "name", "createdAt", "updatedAt" -> sortBy;
+            default -> "createdAt";
+        };
     }
 }

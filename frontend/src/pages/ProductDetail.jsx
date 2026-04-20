@@ -37,6 +37,16 @@ const ProductDetail = () => {
     }
   };
 
+  const handleBuyNow = async () => {
+    if (!selectedSku) return;
+    try {
+      await api.post('/cart', { skuId: selectedSku.id, quantity });
+      navigate('/checkout');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Vui lòng đăng nhập để mua hàng.');
+    }
+  };
+
   if (loading) return (
     <div className="flex justify-center py-40">
       <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -57,15 +67,27 @@ const ProductDetail = () => {
         <div className="space-y-6">
           <div className="aspect-[4/5] bg-gray-50 rounded-[48px] overflow-hidden border border-gray-100 shadow-2xl shadow-gray-200/50">
             <img 
-              src={product.imageUrls?.[0] || 'https://via.placeholder.com/600x750'} 
+              src={product.imageUrls?.[0] || 'https://via.placeholder.com/600x750?text=No+Image'} 
               alt={product.name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = 'https://via.placeholder.com/600x750?text=Link+Ảnh+Lỗi';
+                e.target.onerror = null;
+              }}
             />
           </div>
           <div className="grid grid-cols-4 gap-4">
             {product.imageUrls?.slice(1, 5).map((url, idx) => (
               <div key={idx} className="aspect-square bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 hover:border-primary transition-colors cursor-pointer">
-                <img src={url} alt={`${product.name} ${idx}`} className="w-full h-full object-cover" />
+                <img 
+                  src={url} 
+                  alt={`${product.name} ${idx}`} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/200x200?text=Lỗi';
+                    e.target.onerror = null;
+                  }}
+                />
               </div>
             ))}
           </div>
@@ -75,9 +97,16 @@ const ProductDetail = () => {
         <div className="flex flex-col">
           <div className="mb-10">
             <div className="flex items-center gap-4 mb-6">
-              <span className="text-[10px] font-black text-primary border-2 border-primary px-3 py-1 rounded-full uppercase tracking-[0.2em]">
-                {product.shopName}
-              </span>
+              <button 
+                onClick={() => {
+                  const sId = product.shopId || product.shop?.id;
+                  if (sId) navigate(`/shops/${sId}`);
+                  else alert('Thông tin Shop đang được cập nhật...');
+                }}
+                className="text-[10px] font-black text-primary border-2 border-primary px-3 py-1 rounded-full uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all pointer-events-auto"
+              >
+                {product.shopName || 'Cửa hàng'}
+              </button>
               <span className="w-1.5 h-1.5 rounded-full bg-gray-200"></span>
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">CHÍNH HÃNG</span>
             </div>
@@ -143,7 +172,7 @@ const ProductDetail = () => {
             >
               Thêm vào giỏ hàng
             </button>
-            <button className="flex-1 bg-white text-dark border-2 border-dark py-6 rounded-[24px] font-black uppercase tracking-[0.2em] text-xs hover:bg-gray-50 transition-all">
+            <button onClick={handleBuyNow} className="flex-1 bg-white text-dark border-2 border-dark py-6 rounded-[24px] font-black uppercase tracking-[0.2em] text-xs hover:bg-gray-50 transition-all">
               Mua ngay lập tức
             </button>
           </div>

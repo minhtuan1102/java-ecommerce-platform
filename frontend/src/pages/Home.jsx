@@ -1,70 +1,116 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
 const Home = () => {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
-  
-  // Search & Filter States
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const [searchName, setSearchName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortDir, setSortDir] = useState('desc');
+  const [size, setSize] = useState(20);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
-  const fetchProducts = async () => {
-    setLoading(true);
+  const visiblePages = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i);
+    }
+
+    const pages = new Set([0, totalPages - 1, page - 1, page, page + 1]);
+    return Array.from(pages)
+      .filter((p) => p >= 0 && p < totalPages)
+      .sort((a, b) => a - b);
+  }, [page, totalPages]);
+
+  const fetchCategories = async () => {
     try {
-      const params = new URLSearchParams();
-      if (searchName) params.append('name', searchName);
-      if (selectedCategory) params.append('categoryId', selectedCategory);
-      if (minPrice) params.append('minPrice', minPrice);
-      if (maxPrice) params.append('maxPrice', maxPrice);
+      const response = await api.get('/categories');
+      setCategories(response.data || []);
+    } catch (err) {
+      console.error('Failed to load categories', err);
+    }
+  };
 
-      const response = await api.get(`/products?${params.toString()}`);
-      setProducts(response.data);
+  const fetchProducts = async (targetPage = page, targetSize = size, overrides = {}) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await api.get('/products/discovery', {
+        params: {
+          name: searchName || undefined,
+          categoryId: selectedCategory || undefined,
+          minPrice: minPrice || undefined,
+          maxPrice: maxPrice || undefined,
+          page: targetPage,
+          size: targetSize,
+          sortBy: overrides.sortBy || sortBy,
+          sortDir: overrides.sortDir || sortDir,
+        },
+      });
+
+      setProducts(response.data.content || []);
+      setPage(response.data.page || 0);
+      setTotalPages(response.data.totalPages || 0);
+      setTotalElements(response.data.totalElements || 0);
     } catch (err) {
       console.error('Failed to fetch products', err);
+      setError(err.response?.data?.message || 'Khong the tai danh sach san pham.');
+      setProducts([]);
+      setTotalPages(0);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    let active = true;
-
-    (async () => {
-      setLoading(true);
-      try {
-        const [categoriesResponse, productsResponse] = await Promise.all([
-          api.get('/categories'),
-          api.get('/products')
-        ]);
-
-        if (!active) {
-          return;
-        }
-
-        setCategories(categoriesResponse.data);
-        setProducts(productsResponse.data);
-      } catch (err) {
-        console.error('Failed to load home data', err);
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
+    fetchCategories();
+    fetchProducts(0, size);
   }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchProducts();
+    fetchProducts(0, size);
+  };
+
+  const handlePageChange = (nextPage) => {
+    if (nextPage < 0 || nextPage >= totalPages || nextPage === page) {
+      return;
+    }
+    fetchProducts(nextPage, size);
+  };
+
+  const handlePageSizeChange = (value) => {
+    const nextSize = Number(value);
+    setSize(nextSize);
+    fetchProducts(0, nextSize);
+  };
+
+  const handleSortChange = (value) => {
+    if (value === 'name_asc') {
+      setSortBy('name');
+      setSortDir('asc');
+      return fetchProducts(0, size, { sortBy: 'name', sortDir: 'asc' });
+    }
+
+    if (value === 'name_desc') {
+      setSortBy('name');
+      setSortDir('desc');
+      return fetchProducts(0, size, { sortBy: 'name', sortDir: 'desc' });
+    }
+
+    setSortBy('createdAt');
+    setSortDir('desc');
+    return fetchProducts(0, size, { sortBy: 'createdAt', sortDir: 'desc' });
   };
 
   const handleAddToCart = async (e, skuId) => {
@@ -80,125 +126,152 @@ const Home = () => {
   };
 
   return (
-    <div className="pb-24">
-      {/* Editorial Header */}
-      <div className="max-w-7xl mx-auto px-6 pt-16 pb-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-          <div className="max-w-2xl">
-            <h1 className="text-6xl md:text-8xl font-black text-dark tracking-tighter leading-[0.9] uppercase">
-              CHUẨN MỰC <br /> <span className="text-primary italic">MỚI.</span>
-            </h1>
-            <p className="mt-8 text-gray-500 font-medium text-lg max-w-md">
-              Bộ sưu tập được tuyển chọn kỹ lưỡng cho những người trân trọng giá trị hơn số lượng.
-            </p>
+    <div className="max-w-7xl mx-auto p-4 md:p-6 pb-20">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 mb-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Khám Phá Sản Phẩm</h1>
+            <p className="text-sm text-gray-500 mt-1">Tổng cộng {totalElements.toLocaleString()} sản phẩm</p>
           </div>
-          
-          <div className="flex flex-col items-end gap-4">
-            <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100">
-              <input 
-                type="text" 
-                placeholder="Tìm sản phẩm..." 
-                className="bg-transparent px-4 py-2 outline-none text-sm font-bold w-48 md:w-64"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-              />
-              <button 
-                onClick={handleSearch}
-                className="bg-dark text-white p-2.5 rounded-xl hover:bg-primary transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="flex gap-2">
-              <select 
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest border-b-2 border-dark pb-1 outline-none cursor-pointer"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="">Tất cả danh mục</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <input
-                type="number"
-                min="0"
-                placeholder="Giá từ"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest border-b-2 border-dark pb-1 outline-none w-24"
-              />
-              <input
-                type="number"
-                min="0"
-                placeholder="Đến"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest border-b-2 border-dark pb-1 outline-none w-20"
-              />
-            </div>
-          </div>
+          <div className="text-xs text-gray-500">Trang {totalPages === 0 ? 0 : page + 1}/{totalPages}</div>
+        </div>
+
+        <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-6 gap-3 mt-4">
+          <input
+            type="text"
+            placeholder="Tìm theo tên sản phẩm"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-lg outline-none focus:border-blue-500"
+          />
+
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:border-blue-500"
+          >
+            <option value="">Tất cả danh mục</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="number"
+            min="0"
+            placeholder="Giá từ"
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:border-blue-500"
+          />
+
+          <input
+            type="number"
+            min="0"
+            placeholder="Giá đến"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:border-blue-500"
+          />
+
+          <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
+            Tìm kiếm
+          </button>
+        </form>
+
+        <div className="flex flex-wrap items-center gap-3 mt-3">
+          <select onChange={(e) => handleSortChange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" defaultValue="newest">
+            <option value="newest">Mới nhất</option>
+            <option value="name_asc">Tên A-Z</option>
+            <option value="name_desc">Tên Z-A</option>
+          </select>
+
+          <select value={size} onChange={(e) => handlePageSizeChange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            <option value={15}>15 / trang</option>
+            <option value={20}>20 / trang</option>
+          </select>
         </div>
       </div>
 
-      {/* Product Feed */}
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="h-px bg-gray-100 w-full mb-12"></div>
-        
-        {loading ? (
-          <div className="flex justify-center py-40">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : products.length === 0 ? (
-          <div className="text-center py-40">
-            <h3 className="text-2xl font-black text-gray-300 uppercase tracking-widest italic">Bộ sưu tập trống</h3>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
+      {loading ? (
+        <div className="text-center py-20 text-gray-500">Đang tải sản phẩm...</div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">{error}</div>
+      ) : products.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-lg p-10 text-center text-gray-500">
+          Không tìm thấy sản phẩm phù hợp bộ lọc.
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {products.map((product) => (
-              <Link to={`/products/${product.id}`} key={product.id} className="group cursor-pointer block">
-                <div className="relative aspect-[4/5] bg-gray-100 rounded-[32px] overflow-hidden mb-6">
+              <Link
+                to={`/products/${product.id}`}
+                key={product.id}
+                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
+              >
+                <div className="aspect-square bg-gray-100">
                   <img
-                    src={product.imageUrls?.[0] || 'https://via.placeholder.com/400x500'} 
+                    src={product.imageUrls?.[0] || 'https://via.placeholder.com/400'}
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-out"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button 
-                      onClick={(e) => product.skus?.[0] && handleAddToCart(e, product.skus[0].id)}
-                      className="bg-white text-dark px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest translate-y-4 group-hover:translate-y-0 transition-transform duration-500"
-                    >
-                      Thêm vào túi
-                    </button>
-                  </div>
                 </div>
-                
-                <div className="flex justify-between items-start gap-4 px-2">
-                  <div className="flex-grow">
-                    <h3 className="text-lg font-black text-dark leading-tight mb-2 group-hover:text-primary transition-colors">
-                      {product.name}
-                    </h3>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-black text-gray-400 uppercase tracking-widest">{product.shopName}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-gray-200"></span>
-                      <span className="text-xs font-black text-accent uppercase tracking-widest">Sẵn có</span>
-                    </div>
+
+                <div className="p-3">
+                  <div className="text-xs text-gray-500 mb-1 truncate">{product.shopName}</div>
+                  <h3 className="font-semibold text-gray-900 line-clamp-2 min-h-[48px]">{product.name}</h3>
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="text-red-600 font-bold">{Number(product.skus?.[0]?.price || 0).toLocaleString()} VND</div>
+                    <span className="text-xs text-green-600 font-semibold">Còn hàng</span>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-xl font-black text-dark">
-                      <span className="text-sm mr-0.5">₫</span>
-                      {product.skus?.[0]?.price?.toLocaleString()}
-                    </div>
-                  </div>
+                  <button
+                    onClick={(e) => product.skus?.[0] && handleAddToCart(e, product.skus[0].id)}
+                    className="mt-3 w-full px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-semibold"
+                  >
+                    Thêm vào giỏ
+                  </button>
                 </div>
               </Link>
             ))}
           </div>
-        )}
-      </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <button
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page === 0}
+              className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-40"
+            >
+              Trước
+            </button>
+
+            {visiblePages.map((pageIndex) => (
+              <button
+                key={pageIndex}
+                onClick={() => handlePageChange(pageIndex)}
+                className={`px-3 py-2 rounded-lg border ${
+                  pageIndex === page ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {pageIndex + 1}
+              </button>
+            ))}
+
+            <button
+              onClick={() => handlePageChange(page + 1)}
+              disabled={totalPages === 0 || page >= totalPages - 1}
+              className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-40"
+            >
+              Sau
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
 export default Home;
+

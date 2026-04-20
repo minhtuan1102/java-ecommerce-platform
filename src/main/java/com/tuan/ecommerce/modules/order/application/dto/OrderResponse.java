@@ -1,6 +1,7 @@
 package com.tuan.ecommerce.modules.order.application.dto;
 
 import com.tuan.ecommerce.modules.order.domain.OrderStatus;
+import com.tuan.ecommerce.modules.order.domain.PaymentMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +21,9 @@ public class OrderResponse {
     private String shopName;
     private Long userId;
     private String userName;
+    private String shippingAddress;
+    private String phoneNumber;
+    private PaymentMethod paymentMethod;
     private BigDecimal totalAmount;
     private OrderStatus status;
     private List<OrderItemResponse> items;

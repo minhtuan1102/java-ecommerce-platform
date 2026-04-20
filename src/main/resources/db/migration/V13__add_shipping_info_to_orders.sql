@@ -1,0 +1,2 @@
+ALTER TABLE orders ADD COLUMN shipping_address VARCHAR(255) DEFAULT '';
+ALTER TABLE orders ADD COLUMN phone_number VARCHAR(20) DEFAULT '';

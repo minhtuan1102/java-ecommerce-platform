@@ -9,12 +9,14 @@ import MyShop from './pages/MyShop';
 import AddProduct from './pages/AddProduct';
 import Home from './pages/Home';
 import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
 import MyOrders from './pages/MyOrders';
 import ShopOrders from './pages/ShopOrders';
 import Profile from './pages/Profile';
 import AdminUsers from './pages/AdminUsers';
 import AdminProducts from './pages/AdminProducts';
 import ProductDetail from './pages/ProductDetail';
+import ShopDetail from './pages/ShopDetail';
 
 const ProtectedRoute = ({ children, role }) => {
   const { user } = useAuth();
@@ -49,6 +51,11 @@ function App() {
                 <Cart />
               </ProtectedRoute>
             } />
+            <Route path="/checkout" element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            } />
             <Route path="/my-orders" element={
               <ProtectedRoute>
                 <MyOrders />
@@ -62,6 +69,11 @@ function App() {
             <Route path="/products/:id" element={
               <ProtectedRoute>
                 <ProductDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/shops/:id" element={
+              <ProtectedRoute>
+                <ShopDetail />
               </ProtectedRoute>
             } />
             <Route path="/admin/users" element={
@@ -96,7 +108,6 @@ function App() {
             } />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            {/* Catch-all route */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>

@@ -1,5 +1,6 @@
 package com.tuan.ecommerce.modules.product.api;
 
+import com.tuan.ecommerce.common.dto.PageResponse;
 import com.tuan.ecommerce.modules.product.application.ProductService;
 import com.tuan.ecommerce.modules.product.application.dto.CreateProductRequest;
 import com.tuan.ecommerce.modules.product.application.dto.ProductResponse;
@@ -40,6 +41,21 @@ public class ProductController {
             @RequestParam(required = false) java.math.BigDecimal minPrice,
             @RequestParam(required = false) java.math.BigDecimal maxPrice) {
         return ResponseEntity.ok(productService.searchProducts(name, categoryId, minPrice, maxPrice));
+    }
+
+    @GetMapping("/discovery")
+    public ResponseEntity<PageResponse<ProductResponse>> getDiscoveryProducts(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        return ResponseEntity.ok(productService.searchProductsPage(
+                name, categoryId, minPrice, maxPrice, page, size, sortBy, sortDir
+        ));
     }
 
     @GetMapping("/{id}")

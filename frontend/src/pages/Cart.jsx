@@ -34,15 +34,7 @@ const Cart = () => {
   };
 
   const handleCheckout = () => {
-    alert('Tính năng thanh toán đang được xử lý ngầm (Pessimistic Locking). Đang tạo đơn hàng...');
-    api.post('/orders/checkout')
-      .then(() => {
-        alert('Đặt hàng thành công!');
-        navigate('/');
-      })
-      .catch(err => {
-        alert(err.response?.data?.message || 'Có lỗi xảy ra khi đặt hàng.');
-      });
+    navigate('/checkout');
   };
 
   if (loading) return <div className="p-8 text-center">Đang tải giỏ hàng...</div>;

@@ -1,8 +1,10 @@
 package com.tuan.ecommerce.modules.order.api;
 
 import com.tuan.ecommerce.modules.order.application.OrderService;
+import com.tuan.ecommerce.modules.order.application.dto.CheckoutRequest;
 import com.tuan.ecommerce.modules.order.application.dto.OrderResponse;
 import com.tuan.ecommerce.modules.order.domain.OrderStatus;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,8 +25,8 @@ public class OrderController {
 
     @PostMapping("/checkout")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<OrderResponse>> checkout(Principal principal) {
-        List<OrderResponse> orders = orderService.checkout(principal.getName());
+    public ResponseEntity<List<OrderResponse>> checkout(@Valid @RequestBody CheckoutRequest request, Principal principal) {
+        List<OrderResponse> orders = orderService.checkout(principal.getName(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(orders);
     }
 

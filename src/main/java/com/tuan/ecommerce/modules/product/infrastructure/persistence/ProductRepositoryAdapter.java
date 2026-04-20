@@ -2,6 +2,8 @@ package com.tuan.ecommerce.modules.product.infrastructure.persistence;
 
 import com.tuan.ecommerce.modules.product.domain.Product;
 import com.tuan.ecommerce.modules.product.domain.ProductApprovalStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -54,6 +56,11 @@ public class ProductRepositoryAdapter implements ProductRepository {
     @Override
     public List<Product> searchProducts(String name, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {
         return productJpaRepository.searchProducts(name, categoryId, minPrice, maxPrice);
+    }
+
+    @Override
+    public Page<Product> searchProductsPage(String name, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Pageable pageable) {
+        return productJpaRepository.searchProductsPage(name, categoryId, minPrice, maxPrice, pageable);
     }
 
     @Override
