@@ -3,6 +3,7 @@ package com.tuan.ecommerce.modules.product.application.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,7 +30,11 @@ public class CreateProductRequest {
     private Long categoryId;
 
     @NotEmpty(message = "Product must have at least one SKU")
+    @Valid
     private List<SkuRequest> skus;
+
+    @Valid
+    private List<ProductImageRequest> images;
 
     private List<String> imageUrls;
 

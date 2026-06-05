@@ -4,6 +4,7 @@ import com.tuan.ecommerce.modules.order.application.dto.OrderItemResponse;
 import com.tuan.ecommerce.modules.order.application.dto.OrderResponse;
 import com.tuan.ecommerce.modules.order.domain.Order;
 import com.tuan.ecommerce.modules.order.domain.OrderItem;
+import com.tuan.ecommerce.modules.product.domain.ProductImage;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ public class OrderMapper {
         return OrderResponse.builder()
                 .id(order.getId())
                 .userId(order.getUser().getId())
+                .recipientName(order.getRecipientName())
                 .shippingAddress(order.getShippingAddress())
                 .phoneNumber(order.getPhoneNumber())
                 .paymentMethod(order.getPaymentMethod())
@@ -36,13 +38,29 @@ public class OrderMapper {
         BigDecimal subtotal = item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
         return OrderItemResponse.builder()
                 .id(item.getId())
+                .productId(item.getSku().getProduct().getId())
                 .skuId(item.getSku().getId())
-                .productName(item.getSku().getProduct().getName())
-                .tierIndex(item.getSku().getTierIndex())
+                .productName(item.getProductName())
+                .imageUrl(getMainImageUrl(item))
+                .skuCode(item.getSkuCode())
+                .tierIndex(item.getTierIndex())
                 .quantity(item.getQuantity())
                 .price(item.getPrice())
                 .subtotal(subtotal)
                 .build();
+    }
+
+    private String getMainImageUrl(OrderItem item) {
+        List<ProductImage> images = item.getSku().getProduct().getImages();
+        if (images == null || images.isEmpty()) {
+            return null;
+        }
+
+        return images.stream()
+                .filter(ProductImage::isMain)
+                .findFirst()
+                .orElse(images.get(0))
+                .getUrl();
     }
 
     public List<OrderResponse> toResponseList(List<Order> orders) {

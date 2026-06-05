@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #4f46e5;
-  --color-primary-dark: #3730a3;
-  --color-accent: #10b981;
-  --color-dark: #0f172a;
-  --color-bg-soft: #f8fafc;
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-accent: #059669;
+  --color-dark: #111827;
+  --color-bg-soft: #f3f6fb;
 }
 
 :root {
@@ -16,10 +16,69 @@
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background-color: var(--color-bg-soft);
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 26rem),
+    radial-gradient(circle at bottom right, rgba(5, 150, 105, 0.08), transparent 24rem),
+    linear-gradient(180deg, #f8fafc 0%, var(--color-bg-soft) 100%);
   color: #1e293b;
   -webkit-font-smoothing: antialiased;
-  letter-spacing: -0.01em; /* Giúp tiếng Việt trông gọn hơn */
+  letter-spacing: 0;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition-duration: 160ms;
+  transition-property: background-color, border-color, color, box-shadow, opacity, transform;
+  transition-timing-function: ease;
+}
+
+input,
+select,
+textarea {
+  background-color: #ffffff;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+button:active,
+a:active {
+  transform: translateY(1px);
+}
+
+svg {
+  flex-shrink: 0;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.45);
+  outline-offset: 3px;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+thead th {
+  font-weight: 700;
+}
+
+tbody tr {
+  transition: background-color 140ms ease;
+}
+
+tbody tr:hover {
+  background-color: rgba(248, 250, 252, 0.9);
 }
 
 ::selection {
@@ -38,4 +97,8 @@ body {
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

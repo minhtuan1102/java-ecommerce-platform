@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 @Component
 public class AuthMapper {
-
     public User toEntity(RegisterRequest request) {
         return User.builder()
                 .username(request.getUsername().trim())
@@ -29,6 +28,8 @@ public class AuthMapper {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
+                .avatarPublicId(user.getAvatarPublicId())
                 .roles(roleNames)
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)

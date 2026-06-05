@@ -26,7 +26,12 @@ public class OrderRepositoryAdapter implements OrderRepository {
     }
 
     @Override
+    public List<Order> findAll() {
+        return orderJpaRepository.findAllByOrderByCreatedAtDescIdDesc();
+    }
+
+    @Override
     public List<Order> findByUserId(Long userId) {
-        return orderJpaRepository.findByUserId(userId);
+        return orderJpaRepository.findByUserIdOrderByCreatedAtDescIdDesc(userId);
     }
 }

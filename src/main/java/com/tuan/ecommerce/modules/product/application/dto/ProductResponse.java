@@ -26,6 +26,7 @@ public class ProductResponse {
     private BigDecimal averageRating;
     private Integer reviewCount;
     private List<SkuResponse> skus;
+    private List<ImageResponse> images;
     private List<String> imageUrls;
     private List<SpecResponse> specs;
     private LocalDateTime createdAt;
@@ -41,6 +42,18 @@ public class ProductResponse {
         private String tierIndex;
         private BigDecimal price;
         private Integer stock;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ImageResponse {
+        private Long id;
+        private String url;
+        private String cloudinaryPublicId;
+        private Boolean main;
+        private Integer sortOrder;
     }
 
     @Data

@@ -1,170 +1,232 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import Notice from '../components/Notice';
 import { useAuth } from '../context/AuthContext';
+import { openSignedUploadWidget } from '../utils/cloudinaryUpload';
+import { getApiError } from '../utils/format';
 
 const Profile = () => {
   const { updateUser, logout } = useAuth();
   const navigate = useNavigate();
-
-  const [formData, setFormData] = useState({ username: '', email: '' });
+  const [formData, setFormData] = useState({ username: '', email: '', avatarUrl: '', avatarPublicId: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [notice, setNotice] = useState({ type: '', text: '' });
 
   useEffect(() => {
+    let active = true;
     (async () => {
       try {
         const response = await api.get('/auth/me');
-        setFormData({ username: response.data.username, email: response.data.email });
+        if (!active) return;
+        setFormData({
+          username: response.data.username || '',
+          email: response.data.email || '',
+          avatarUrl: response.data.avatarUrl || '',
+          avatarPublicId: response.data.avatarPublicId || '',
+        });
         updateUser({
           id: response.data.id,
           username: response.data.username,
           email: response.data.email,
-          roles: response.data.roles
+          avatarUrl: response.data.avatarUrl,
+          avatarPublicId: response.data.avatarPublicId,
+          roles: response.data.roles,
         });
       } catch (err) {
-        setError(err.response?.data?.message || 'Khong the tai thong tin tai khoan.');
+        if (active) setNotice({ type: 'error', text: getApiError(err, 'Không thể tải thông tin tài khoản.') });
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     })();
+    return () => {
+      active = false;
+    };
   }, [updateUser]);
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleUpdate = async (e) => {
-    e.preventDefault();
+  const updateProfile = async (event) => {
+    event.preventDefault();
     setSaving(true);
-    setError('');
-
+    setNotice({ type: '', text: '' });
     try {
       const response = await api.put('/auth/me', formData);
       updateUser({
         id: response.data.id,
         username: response.data.username,
         email: response.data.email,
-        roles: response.data.roles
+        avatarUrl: response.data.avatarUrl,
+        avatarPublicId: response.data.avatarPublicId,
+        roles: response.data.roles,
       });
-      alert('Cap nhat tai khoan thanh cong.');
+      setNotice({ type: 'success', text: 'Đã cập nhật hồ sơ.' });
     } catch (err) {
-      setError(err.response?.data?.message || 'Cap nhat that bai.');
+      setNotice({ type: 'error', text: getApiError(err, 'Không thể cập nhật hồ sơ.') });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async () => {
-    const confirmed = window.confirm('Ban chac chan muon vo hieu hoa tai khoan?');
-    if (!confirmed) {
-      return;
-    }
+  const uploadAvatar = () => {
+    openSignedUploadWidget({
+      folder: import.meta.env.VITE_CLOUDINARY_AVATAR_FOLDER || 'ecommerce/avatars',
+      multiple: false,
+      maxFiles: 1,
+      setNotice,
+      onSuccess: async (info) => {
+        const nextData = {
+          ...formData,
+          avatarUrl: info.secure_url,
+          avatarPublicId: info.public_id,
+        };
+        setFormData(nextData);
+        setSaving(true);
+        try {
+          const response = await api.put('/auth/me', nextData);
+          updateUser({
+            id: response.data.id,
+            username: response.data.username,
+            email: response.data.email,
+            avatarUrl: response.data.avatarUrl,
+            avatarPublicId: response.data.avatarPublicId,
+            roles: response.data.roles,
+          });
+          setFormData({
+            username: response.data.username || '',
+            email: response.data.email || '',
+            avatarUrl: response.data.avatarUrl || '',
+            avatarPublicId: response.data.avatarPublicId || '',
+          });
+          setNotice({ type: 'success', text: 'Đã cập nhật ảnh đại diện.' });
+        } catch (err) {
+          setNotice({ type: 'error', text: getApiError(err, 'Không thể lưu ảnh đại diện.') });
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+  };
 
+  const changePassword = async (event) => {
+    event.preventDefault();
+    setSavingPassword(true);
+    setNotice({ type: '', text: '' });
+    try {
+      await api.post('/auth/me/change-password', passwordForm);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setNotice({ type: 'success', text: 'Đã đổi mật khẩu. Vui lòng đăng nhập lại.' });
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      setNotice({ type: 'error', text: getApiError(err, 'Không thể đổi mật khẩu.') });
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const deactivateAccount = async () => {
+    if (!window.confirm('Bạn muốn vô hiệu hóa tài khoản này?')) return;
     try {
       await api.delete('/auth/me');
       await logout();
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.message || 'Khong the vo hieu hoa tai khoan.');
+      setNotice({ type: 'error', text: getApiError(err, 'Không thể vô hiệu hóa tài khoản.') });
     }
   };
 
-  if (loading) {
-    return <div className="p-8 text-center">Dang tai thong tin tai khoan...</div>;
-  }
-
   return (
-    <div className="max-w-4xl mx-auto p-6 pb-20 pt-10">
-      <div className="mb-12">
-        <h1 className="text-5xl font-black text-dark tracking-tighter uppercase leading-none">Hồ sơ cá nhân</h1>
-        <p className="text-gray-400 text-xs font-black uppercase tracking-[0.2em] mt-3">Quản lý thông tin và bảo mật tài khoản của bạn</p>
+    <main className="mx-auto max-w-4xl px-4 py-6 md:px-6">
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold text-gray-950">Tài khoản của tôi</h1>
+        <p className="mt-1 text-sm text-gray-500">Cập nhật thông tin đăng nhập và hồ sơ cơ bản.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
-        {/* Trái: Avatar */}
-        <div className="md:col-span-1">
-          <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 p-10 text-center">
-            <div className="relative inline-block mb-6">
-              <div className="w-40 h-40 rounded-full bg-gray-50 border-8 border-white shadow-xl flex items-center justify-center text-gray-200 overflow-hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-            <h3 className="font-black text-2xl text-dark tracking-tight">{formData.username}</h3>
-            <p className="text-gray-400 text-xs font-black uppercase tracking-widest mt-2 mb-8">{formData.email}</p>
-            
-            <div className="pt-6 border-t border-gray-50">
-              <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-gray-400">
-                <span>Trạng thái</span>
-                <span className="text-accent bg-accent/10 px-3 py-1 rounded-full">Hoạt động</span>
-              </div>
-            </div>
-          </div>
-          
-          <button
-            onClick={handleDelete}
-            className="w-full mt-8 py-5 rounded-2xl border-2 border-dashed border-gray-100 text-gray-400 font-black uppercase tracking-widest text-xs hover:text-red-500 hover:border-red-100 transition-all"
-          >
-            Vô hiệu hóa tài khoản
-          </button>
-        </div>
+      <Notice type={notice.type} message={notice.text} />
 
-        {/* Phải: Form */}
-        <div className="md:col-span-2">
-          <div className="bg-white rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.06)] p-12 border border-gray-50">
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-600 text-red-600 p-5 rounded-r-xl mb-10 text-xs font-black uppercase tracking-widest">
-                {error}
+      {loading ? (
+        <div className="mt-4 rounded-md border border-gray-200 bg-white p-5 text-sm text-gray-500">Đang tải thông tin tài khoản...</div>
+      ) : (
+        <div className="mt-4 grid gap-5 md:grid-cols-[260px_1fr]">
+          <aside className="rounded-md border border-gray-200 bg-white p-5">
+            {formData.avatarUrl ? (
+              <img src={formData.avatarUrl} alt={formData.username || 'Tài khoản'} className="h-20 w-20 rounded-full object-cover" />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-2xl font-bold text-white">
+                {(formData.username || formData.email || 'U').slice(0, 1).toUpperCase()}
               </div>
             )}
+            <h2 className="mt-4 font-bold text-gray-950">{formData.username}</h2>
+            <p className="mt-1 break-all text-sm text-gray-500">{formData.email}</p>
+            <button onClick={deactivateAccount} className="mt-5 rounded-md border border-red-200 px-4 py-2 text-sm font-semibold text-red-600">
+              Vô hiệu hóa tài khoản
+            </button>
+          </aside>
 
-            <form onSubmit={handleUpdate} className="space-y-12">
-              <div className="space-y-10">
-                <div className="group">
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4 group-focus-within:text-primary transition-colors">Tên người dùng hiển thị</label>
-                  <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    className="w-full pb-4 bg-transparent border-b-2 border-gray-100 focus:border-dark outline-none transition-all font-black text-xl text-dark"
-                    required
-                  />
+          <div className="space-y-5">
+            <form onSubmit={updateProfile} className="rounded-md border border-gray-200 bg-white p-5">
+              <h2 className="font-bold text-gray-950">Thông tin cá nhân</h2>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Tên người dùng</label>
+                  <input required name="username" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
                 </div>
-
-                <div className="group">
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4 group-focus-within:text-primary transition-colors">Địa chỉ Email liên hệ</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full pb-4 bg-transparent border-b-2 border-gray-100 focus:border-dark outline-none transition-all font-black text-xl text-dark"
-                    required
-                  />
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Email</label>
+                  <input required type="email" name="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                </div>
+                <div className="rounded-md border border-gray-200 p-3">
+                  <label className="text-sm font-semibold text-gray-700">Ảnh đại diện</label>
+                  <div className="mt-3 flex items-center gap-3">
+                    {formData.avatarUrl ? (
+                      <img src={formData.avatarUrl} alt="Ảnh đại diện" className="h-16 w-16 rounded-full object-cover" />
+                    ) : (
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-xl font-bold text-gray-500">
+                        {(formData.username || formData.email || 'U').slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <button type="button" onClick={uploadAvatar} className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
+                        Tải ảnh lên
+                      </button>
+                      <p className="mt-1 text-xs text-gray-500">Ảnh sẽ được lưu ngay sau khi tải lên.</p>
+                    </div>
+                  </div>
+                  {formData.avatarPublicId && <p className="mt-2 truncate text-xs text-gray-500">{formData.avatarPublicId}</p>}
                 </div>
               </div>
+              <button disabled={saving} className="mt-5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60">
+                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+              </button>
+            </form>
 
-              <div className="pt-6">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className={`px-16 py-6 bg-dark text-white rounded-[24px] font-black uppercase tracking-widest transition-all hover:bg-primary active:scale-[0.98] shadow-2xl shadow-dark/20 text-sm ${saving ? 'opacity-70 cursor-not-allowed' : ''}`}
-                >
-                  {saving ? 'Đang lưu...' : 'Cập nhật hồ sơ'}
-                </button>
+            <form onSubmit={changePassword} className="rounded-md border border-gray-200 bg-white p-5">
+              <h2 className="font-bold text-gray-950">Đổi mật khẩu</h2>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Mật khẩu hiện tại</label>
+                  <input required type="password" value={passwordForm.currentPassword} onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })} className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Mật khẩu mới</label>
+                  <input required minLength="6" type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Nhập lại mật khẩu mới</label>
+                  <input required minLength="6" type="password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+                </div>
               </div>
+              <button disabled={savingPassword} className="mt-5 rounded-md bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-primary disabled:opacity-60">
+                {savingPassword ? 'Đang đổi...' : 'Đổi mật khẩu'}
+              </button>
             </form>
           </div>
         </div>
-      </div>
-    </div>
+      )}
+    </main>
   );
 };
 
 export default Profile;
-
-

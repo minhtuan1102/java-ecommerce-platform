@@ -9,6 +9,7 @@ import com.tuan.ecommerce.modules.cart.domain.CartItem;
 import com.tuan.ecommerce.modules.cart.infrastructure.mapper.CartMapper;
 import com.tuan.ecommerce.modules.cart.infrastructure.persistence.CartRepository;
 import com.tuan.ecommerce.modules.product.domain.ProductSKU;
+import com.tuan.ecommerce.modules.product.domain.ProductSkuStatus;
 import com.tuan.ecommerce.modules.product.infrastructure.persistence.ProductSkuRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,8 @@ public class CartService {
         ProductSKU sku = skuRepository.findById(request.getSkuId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SKU not found"));
 
+        validateSkuCanBePurchased(sku, request.getQuantity());
+
         Cart cart = cartRepository.findByUserId(user.getId())
                 .orElseGet(() -> {
                     Cart newCart = new Cart();
@@ -53,7 +56,9 @@ public class CartService {
 
         if (existingItem.isPresent()) {
             CartItem item = existingItem.get();
-            item.setQuantity(item.getQuantity() + request.getQuantity());
+            int newQuantity = item.getQuantity() + request.getQuantity();
+            validateSkuCanBePurchased(sku, newQuantity);
+            item.setQuantity(newQuantity);
         } else {
             CartItem newItem = CartItem.builder()
                     .cart(cart)
@@ -67,7 +72,7 @@ public class CartService {
         return cartMapper.toResponse(savedCart);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CartResponse getMyCart(String userEmail) {
         User user = userRepository.findByEmailIgnoreCase(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
@@ -114,6 +119,7 @@ public class CartService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found in cart"));
 
         cartItem.setQuantity(quantity);
+        validateSkuCanBePurchased(cartItem.getSku(), quantity);
         Cart savedCart = cartRepository.save(cart);
         return cartMapper.toResponse(savedCart);
     }
@@ -129,5 +135,19 @@ public class CartService {
         cart.getItems().clear();
         Cart savedCart = cartRepository.save(cart);
         return cartMapper.toResponse(savedCart);
+    }
+
+    private void validateSkuCanBePurchased(ProductSKU sku, Integer quantity) {
+        if (quantity == null || quantity < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be at least 1");
+        }
+
+        if (!sku.getProduct().isActive() || sku.getStatus() != ProductSkuStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product is not available");
+        }
+
+        if (sku.getStock() < quantity) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product is out of stock");
+        }
     }
 }

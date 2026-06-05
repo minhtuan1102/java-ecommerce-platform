@@ -16,6 +16,8 @@ public class UserResponse {
     private Long id;
     private String username;
     private String email;
+    private String avatarUrl;
+    private String avatarPublicId;
     private Set<String> roles;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

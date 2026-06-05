@@ -6,6 +6,7 @@ import com.tuan.ecommerce.modules.brand.application.dto.UpdateBrandRequest;
 import com.tuan.ecommerce.modules.brand.domain.Brand;
 import com.tuan.ecommerce.modules.brand.infrastructure.mapper.BrandMapper;
 import com.tuan.ecommerce.modules.brand.infrastructure.persistence.BrandRepository;
+import com.tuan.ecommerce.modules.cloudinary.application.CloudinaryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
@@ -17,10 +18,12 @@ import java.util.List;
 public class BrandService {
     private final BrandRepository brandRepository;
     private final BrandMapper brandMapper;
+    private final CloudinaryService cloudinaryService;
 
-    public BrandService(BrandRepository brandRepository, BrandMapper brandMapper) {
+    public BrandService(BrandRepository brandRepository, BrandMapper brandMapper, CloudinaryService cloudinaryService) {
         this.brandRepository = brandRepository;
         this.brandMapper = brandMapper;
+        this.cloudinaryService = cloudinaryService;
     }
 
     @Transactional
@@ -63,8 +66,14 @@ public class BrandService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Brand name already exists");
         }
         
+        String previousPublicId = existingBrand.getLogoPublicId();
         brandMapper.updateEntity(existingBrand, request);
         Brand savedBrand = brandRepository.save(existingBrand);
+        if (previousPublicId != null
+                && !previousPublicId.isBlank()
+                && (savedBrand.getLogoPublicId() == null || !previousPublicId.equals(savedBrand.getLogoPublicId()))) {
+            cloudinaryService.deleteImage(previousPublicId);
+        }
         return brandMapper.toResponse(savedBrand);
     }
 
@@ -72,6 +81,8 @@ public class BrandService {
     public void deleteBrand(Long id) {
         Brand existingBrand = brandRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Brand not found"));
+        String publicId = existingBrand.getLogoPublicId();
         brandRepository.delete(existingBrand);
+        cloudinaryService.deleteImage(publicId);
     }
 }

@@ -17,6 +17,7 @@ public class BrandResponse {
     private String slug;
     private String description;
     private String logoUrl;
+    private String logoPublicId;
     private boolean active;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

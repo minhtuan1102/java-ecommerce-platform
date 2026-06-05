@@ -18,6 +18,7 @@ import java.util.List;
 public class OrderResponse {
     private Long id;
     private Long userId;
+    private String recipientName;
     private String shippingAddress;
     private String phoneNumber;
     private PaymentMethod paymentMethod;

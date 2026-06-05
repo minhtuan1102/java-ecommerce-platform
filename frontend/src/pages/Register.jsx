@@ -35,8 +35,8 @@ const Register = () => {
           <h1 className="text-7xl font-black text-white tracking-tighter leading-none mb-8 uppercase">
             TẠO <br /> <span className="text-primary italic">TÀI KHOẢN.</span>
           </h1>
-          <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-[10px]">
-            Bắt đầu hành trình với sự tinh tuyển tuyệt đối
+          <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-[15px]">
+            Bắt đầu hành trình với sự tận tâm.
           </p>
         </div>
       </div>

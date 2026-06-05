@@ -32,8 +32,11 @@ public class Brand extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "logo_url", columnDefinition = "TEXT")
     private String logoUrl;
+
+    @Column(name = "logo_public_id", length = 255)
+    private String logoPublicId;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default

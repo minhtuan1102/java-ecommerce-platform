@@ -2,6 +2,7 @@ package com.tuan.ecommerce.modules.auth.api;
 
 import com.tuan.ecommerce.modules.auth.application.UserCrudService;
 import com.tuan.ecommerce.modules.auth.application.dto.AdminUpdateUserRequest;
+import com.tuan.ecommerce.modules.auth.application.dto.ChangePasswordRequest;
 import com.tuan.ecommerce.modules.auth.application.dto.UpdateProfileRequest;
 import com.tuan.ecommerce.modules.auth.application.dto.UserResponse;
 import jakarta.validation.Valid;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,6 +40,13 @@ public class UserController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> updateMe(@Valid @RequestBody UpdateProfileRequest request, Principal principal) {
         return ResponseEntity.ok(userCrudService.updateMe(principal.getName(), request));
+    }
+
+    @PostMapping("/me/change-password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request, Principal principal) {
+        userCrudService.changePassword(principal.getName(), request);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/me")

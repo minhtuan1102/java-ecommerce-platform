@@ -20,9 +20,9 @@ const Login = () => {
     setError('');
     try {
       const response = await api.post('/auth/login', formData);
-      const { id, username, email, roles, accessToken, refreshToken } = response.data;
-      login({ id, username, email, roles }, accessToken, refreshToken);
-      navigate('/');
+      const { id, username, email, avatarUrl, avatarPublicId, roles, accessToken, refreshToken } = response.data;
+      login({ id, username, email, avatarUrl, avatarPublicId, roles }, accessToken, refreshToken);
+      navigate(roles?.includes('ROLE_ADMIN') ? '/admin' : '/');
     } catch (err) {
       setError(err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại.');
     } finally {
@@ -36,10 +36,10 @@ const Login = () => {
       <div className="hidden lg:flex lg:w-1/2 bg-dark items-center justify-center p-12">
         <div className="max-w-md">
           <h1 className="text-7xl font-black text-white tracking-tighter leading-none mb-8 uppercase">
-            GIA NHẬP <br /> <span className="text-primary italic">CÂU LẠC BỘ.</span>
+            MUA SẮM <br /> <span className="text-primary italic">TRÊN EMARKET</span>
           </h1>
-          <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-[10px]">
-            Quyền truy cập độc quyền vào bộ sưu tập tuyển chọn
+          <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-[15px]">
+            Nhận ưu đãi độc quyền ngay hôm nay.
           </p>
         </div>
       </div>

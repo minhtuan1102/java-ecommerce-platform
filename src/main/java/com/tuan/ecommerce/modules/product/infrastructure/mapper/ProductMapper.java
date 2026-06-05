@@ -8,6 +8,7 @@ import com.tuan.ecommerce.modules.product.domain.ProductSpec;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 @Component
@@ -32,8 +33,22 @@ public class ProductMapper {
                         .build())
                 .collect(Collectors.toList()) : null;
 
-        List<String> imageUrls = product.getImages() != null ? product.getImages().stream()
-                .map(ProductImage::getUrl)
+        List<ProductResponse.ImageResponse> images = product.getImages() != null ? product.getImages().stream()
+                .sorted(Comparator.comparing(
+                        ProductImage::getSortOrder,
+                        Comparator.nullsLast(Integer::compareTo)
+                ))
+                .map(image -> ProductResponse.ImageResponse.builder()
+                        .id(image.getId())
+                        .url(image.getUrl())
+                        .cloudinaryPublicId(image.getCloudinaryPublicId())
+                        .main(image.isMain())
+                        .sortOrder(image.getSortOrder())
+                        .build())
+                .collect(Collectors.toList()) : null;
+
+        List<String> imageUrls = images != null ? images.stream()
+                .map(ProductResponse.ImageResponse::getUrl)
                 .collect(Collectors.toList()) : null;
 
         List<ProductResponse.SpecResponse> specs = product.getSpecs() != null ? product.getSpecs().stream()
@@ -56,6 +71,7 @@ public class ProductMapper {
                 .averageRating(product.getAverageRating())
                 .reviewCount(product.getReviewCount())
                 .skus(skus)
+                .images(images)
                 .imageUrls(imageUrls)
                 .specs(specs)
                 .createdAt(product.getCreatedAt())

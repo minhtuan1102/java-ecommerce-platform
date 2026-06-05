@@ -44,7 +44,7 @@ class CategoryServiceTest {
     @Test
     void createCategory_shouldThrowConflict_whenNameAlreadyExists() {
         CreateCategoryRequest request = new CreateCategoryRequest();
-        request.setName("Fashion");
+        request.setName("Appliances");
 
         categoryService.createCategory(request);
 

@@ -21,5 +21,9 @@ public class UpdateProfileRequest {
     @Email(message = "Email is invalid")
     @Size(max = 150, message = "Email cannot exceed 150 characters")
     private String email;
+
+    private String avatarUrl;
+
+    private String avatarPublicId;
 }
 

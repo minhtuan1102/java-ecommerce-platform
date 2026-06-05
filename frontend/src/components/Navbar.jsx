@@ -1,12 +1,107 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+
+const icons = {
+  grid: 'M4 5a1 1 0 0 1 1-1h5v6H4V5Zm10-1h5a1 1 0 0 1 1 1v5h-6V4ZM4 14h6v6H5a1 1 0 0 1-1-1v-5Zm10 0h6v5a1 1 0 0 1-1 1h-5v-6Z',
+  storefront: 'M4 8h16l-1.2-4.2A2 2 0 0 0 16.9 2H7.1a2 2 0 0 0-1.9 1.8L4 8Zm0 0v2a3 3 0 0 0 5.5 1.7A3 3 0 0 0 12 13a3 3 0 0 0 2.5-1.3A3 3 0 0 0 20 10V8M6 13v7h12v-7M9 20v-5h6v5',
+  cart: 'M3 4h2l2.2 10.3a2 2 0 0 0 2 1.7h7.6a2 2 0 0 0 1.9-1.4L21 8H6M10 20h.01M18 20h.01',
+  heart: 'M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 1 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z',
+  receipt: 'M6 3h12v18l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2L6 21V3Zm3 5h6M9 12h6M9 16h4',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 9a7 7 0 0 0-14 0',
+  package: 'M21 8.5 12 3 3 8.5l9 5.5 9-5.5ZM3 8.5V16l9 5 9-5V8.5M12 14v7',
+  category: 'M4 5a2 2 0 0 1 2-2h3v7H4V5Zm11-2h3a2 2 0 0 1 2 2v3h-7V3ZM4 14h7v7H6a2 2 0 0 1-2-2v-5Zm9 0h7v5a2 2 0 0 1-2 2h-5v-7Z',
+  tag: 'M20 10 12 2H5a2 2 0 0 0-2 2v7l8 8a3 3 0 0 0 4.2 0l4.8-4.8a3 3 0 0 0 0-4.2ZM8 7h.01',
+  users: 'M16 20a6 6 0 0 0-12 0M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm10 9a5 5 0 0 0-4-4.9m1-10a3 3 0 0 1 0 6',
+  bell: 'M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0',
+  logout: 'M10 17 15 12l-5-5M15 12H3M21 3v18h-8',
+  menu: 'M4 6h16M4 12h16M4 18h16',
+};
+
+const SvgIcon = ({ name, className = 'h-5 w-5' }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <path d={icons[name]} />
+  </svg>
+);
+
+const navClass = ({ isActive }) =>
+  `group inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors ${
+    isActive ? 'bg-primary text-white shadow-sm shadow-blue-200' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-950'
+  }`;
+
+const storeLinks = [
+  { to: '/', label: 'Khám phá', icon: 'storefront' },
+  { to: '/cart', label: 'Giỏ hàng', icon: 'cart', auth: true },
+  { to: '/wishlist', label: 'Đã lưu', icon: 'heart', auth: true },
+  { to: '/my-orders', label: 'Đơn mua', icon: 'receipt', auth: true },
+];
+
+const adminLinks = [
+  { to: '/admin', label: 'Tổng quan', icon: 'grid', end: true },
+  { to: '/admin/products', label: 'Sản phẩm', icon: 'package' },
+  { to: '/admin/categories', label: 'Danh mục', icon: 'category' },
+  { to: '/admin/brands', label: 'Thương hiệu', icon: 'tag' },
+  { to: '/admin/orders', label: 'Đơn hàng', icon: 'receipt' },
+  { to: '/admin/users', label: 'Người dùng', icon: 'users' },
+];
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
+  const [open, setOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const [pendingOrders, setPendingOrders] = useState(0);
   const isAdmin = user?.roles?.includes('ROLE_ADMIN');
+  const links = isAdmin ? adminLinks : storeLinks.filter((link) => !link.auth || user);
+
+  useEffect(() => {
+    let active = true;
+    if (!user) {
+      window.queueMicrotask(() => {
+        if (active) {
+          setCartCount(0);
+          setPendingOrders(0);
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }
+
+    if (isAdmin) {
+      api.get('/admin/dashboard/summary')
+        .then((response) => {
+          if (active) setPendingOrders(Number(response.data?.ordersByStatus?.PENDING || 0));
+        })
+        .catch(() => {
+          if (active) setPendingOrders(0);
+        });
+    } else {
+      api.get('/cart')
+        .then((response) => {
+          const count = (response.data?.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+          if (active) setCartCount(count);
+        })
+        .catch(() => {
+          if (active) setCartCount(0);
+        });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [user, isAdmin]);
+
+  useEffect(() => {
+    const handleCartUpdated = (event) => {
+      const count = (event.detail?.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      setCartCount(count);
+    };
+
+    window.addEventListener('cart:updated', handleCartUpdated);
+    return () => window.removeEventListener('cart:updated', handleCartUpdated);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -14,76 +109,128 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex justify-between h-20 items-center">
-          <div className="flex items-center">
-            <Link to="/" className="group flex items-center gap-2">
-              <div className="w-10 h-10 bg-primary rounded-xl rotate-12 group-hover:rotate-0 transition-all duration-300 flex items-center justify-center shadow-lg shadow-primary/30">
-                <span className="text-white font-black text-xl -rotate-12 group-hover:rotate-0 transition-all duration-300">E</span>
-              </div>
-              <span className="text-xl font-black text-dark tracking-tight">EMARKET.</span>
-            </Link>
+    <header className="sticky top-0 z-50 border-b border-gray-200/80 bg-white/90 shadow-sm backdrop-blur">
+      <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-4 py-2 md:px-6">
+        <Link to={isAdmin ? '/admin' : '/'} className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-950 text-white shadow-sm shadow-blue-200">
+            <SvgIcon name={isAdmin ? 'grid' : 'storefront'} className="h-6 w-6" />
           </div>
-          
-          <div className="hidden md:flex items-center gap-10">
-            <Link to="/" className="text-sm font-black text-gray-400 hover:text-dark transition relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-primary hover:after:w-full after:transition-all tracking-widest uppercase">KHÁM PHÁ</Link>
-            
+          <div>
+            <div className="text-base font-bold text-gray-950">{isAdmin ? 'Bảng quản trị' : 'EMarket'}</div>
+            <div className="text-xs font-medium text-gray-500">{isAdmin ? 'Quản lý vận hành' : ''}</div>
+          </div>
+        </Link>
+
+        <nav className="hidden flex-1 items-center justify-center gap-1 md:flex">
+          {links.map((link) => (
+            <NavLink key={link.to} to={link.to} end={link.end} className={navClass}>
+              <span className="relative">
+                <SvgIcon name={link.icon} />
+                {link.to === '/cart' && cartCount > 0 && (
+                  <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] leading-4 text-white">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+                {link.to === '/admin/orders' && pendingOrders > 0 && (
+                  <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] leading-4 text-white">
+                    {pendingOrders > 99 ? '99+' : pendingOrders}
+                  </span>
+                )}
+              </span>
+              <span>{link.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="hidden items-center gap-3 md:flex">
+          {user ? (
+            <>
+              <button type="button" className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50" aria-label="Thông báo">
+                <SvgIcon name="bell" />
+                {(isAdmin ? pendingOrders : 0) > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-600" />}
+              </button>
+              <Link
+                to={isAdmin ? '/admin' : '/profile'}
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-200 px-2 text-gray-700 hover:bg-gray-50"
+                aria-label="Tài khoản"
+              >
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.username || user.email || 'Tài khoản'} className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-600">
+                    {(user.username || user.email || 'U').slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+                <span className="max-w-40 truncate text-sm font-semibold">{user.username || user.email}</span>
+              </Link>
+              <button onClick={handleLogout} className="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 px-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                <SvgIcon name="logout" className="h-4 w-4" />
+                <span>Đăng xuất</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="inline-flex h-10 items-center rounded-lg border border-gray-300 px-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                Đăng nhập
+              </Link>
+              <Link to="/register" className="inline-flex h-10 items-center rounded-lg bg-primary px-3 text-sm font-semibold text-white hover:bg-primary-dark">
+                Đăng ký
+              </Link>
+            </>
+          )}
+        </div>
+
+        <button onClick={() => setOpen((value) => !value)} className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 text-gray-700 md:hidden" aria-label="Mở menu">
+          <SvgIcon name="menu" />
+        </button>
+      </div>
+
+      {open && (
+        <div className="border-t border-gray-200 bg-white px-4 py-3 shadow-sm md:hidden">
+          <div className="flex flex-col gap-3">
+            {links.map((link) => (
+              <NavLink key={link.to} to={link.to} end={link.end} className={navClass} onClick={() => setOpen(false)}>
+                <span className="relative">
+                  <SvgIcon name={link.icon} />
+                  {link.to === '/cart' && cartCount > 0 && (
+                    <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] leading-4 text-white">
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                  {link.to === '/admin/orders' && pendingOrders > 0 && (
+                    <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] leading-4 text-white">
+                      {pendingOrders > 99 ? '99+' : pendingOrders}
+                    </span>
+                  )}
+                </span>
+                <span>{link.label}</span>
+              </NavLink>
+            ))}
             {user ? (
               <>
-                <Link to="/cart" className="relative group flex items-center gap-2">
-                  <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 group-hover:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                  </div>
-                  <span className="text-xs font-black text-dark group-hover:text-primary transition-colors tracking-widest uppercase">GIỎ HÀNG</span>
+                <Link
+                  to={isAdmin ? '/admin' : '/profile'}
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700"
+                >
+                  <SvgIcon name="user" className="h-4 w-4" />
+                  <span className="truncate">{user.username || user.email}</span>
                 </Link>
-
-                <Link to="/my-orders" className="relative group flex items-center gap-2 ml-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 group-hover:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                  <span className="text-xs font-black text-dark group-hover:text-primary transition-colors tracking-widest uppercase">ĐƠN MUA</span>
-                </Link>
-                
-                <div className="h-6 w-px bg-gray-100 mx-2"></div>
-
-                <div className="flex items-center gap-8">
-                  {isAdmin && (
-                    <div className="flex gap-6 border-r pr-6">
-                      <Link to="/admin/users" className="text-[10px] font-black text-gray-400 hover:text-dark uppercase tracking-widest">QUẢN LÝ USER</Link>
-                      <Link to="/admin/products" className="text-[10px] font-black text-primary hover:text-primary-dark uppercase tracking-widest">SẢN PHẨM</Link>
-                      <Link to="/admin/products/new" className="text-[10px] font-black text-accent hover:text-primary-dark uppercase tracking-widest">THÊM SP</Link>
-                    </div>
-                  )}
-                  
-                  <Link to="/profile" className="flex items-center gap-3 pl-2 group">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-indigo-400 p-[2px]">
-                      <div className="w-full h-full rounded-[10px] bg-white flex items-center justify-center overflow-hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    </div>
-                    <span className="text-sm font-black text-dark group-hover:text-primary transition-colors uppercase tracking-widest">{user.username}</span>
-                  </Link>
-                  
-                  <button onClick={handleLogout} className="text-xs font-black text-gray-300 hover:text-red-500 uppercase tracking-widest">THOÁT</button>
-                </div>
+                <button onClick={handleLogout} className="inline-flex items-center gap-2 text-left text-sm font-semibold text-red-600">
+                  <SvgIcon name="logout" className="h-4 w-4" />
+                  <span>Đăng xuất</span>
+                </button>
               </>
             ) : (
-              <div className="flex gap-6 items-center">
-                <Link to="/login" className="text-sm font-black text-gray-500 hover:text-dark transition tracking-widest uppercase">ĐĂNG NHẬP</Link>
-                <Link to="/register" className="bg-dark text-white px-10 py-4 rounded-2xl font-black hover:bg-primary transition shadow-xl shadow-dark/10 active:scale-95 text-xs tracking-[0.2em] uppercase">BẮT ĐẦU</Link>
+              <div className="flex gap-2">
+                <Link to="/login" className="text-sm font-semibold text-gray-700">Đăng nhập</Link>
+                <Link to="/register" className="text-sm font-semibold text-primary">Đăng ký</Link>
               </div>
             )}
           </div>
         </div>
-      </div>
-    </nav>
+      )}
+    </header>
   );
 };
 

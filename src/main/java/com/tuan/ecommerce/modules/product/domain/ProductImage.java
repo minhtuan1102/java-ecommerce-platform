@@ -23,6 +23,12 @@ public class ProductImage {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String url;
 
+    @Column(name = "cloudinary_public_id", length = 255)
+    private String cloudinaryPublicId;
+
     @Column(name = "is_main")
     private boolean main;
+
+    @Column(name = "sort_order")
+    private Integer sortOrder;
 }

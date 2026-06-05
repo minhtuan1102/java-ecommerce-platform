@@ -22,4 +22,6 @@ public class CreateBrandRequest {
     private String slug;
 
     private String logoUrl;
+
+    private String logoPublicId;
 }

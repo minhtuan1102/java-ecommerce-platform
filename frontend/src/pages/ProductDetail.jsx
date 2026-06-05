@@ -1,177 +1,196 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
+import EmptyState from '../components/EmptyState';
+import Notice from '../components/Notice';
+import { formatMoney, getApiError } from '../utils/format';
+import { useAuth } from '../context/AuthContext';
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState([]);
   const [selectedSku, setSelectedSku] = useState(null);
+  const [selectedImageUrl, setSelectedImageUrl] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const fetchProduct = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [productRes, reviewRes] = await Promise.all([
+        api.get(`/products/${id}`),
+        api.get(`/products/${id}/reviews`),
+      ]);
+      setProduct(productRes.data);
+      setSelectedSku(productRes.data.skus?.[0] || null);
+      setSelectedImageUrl(productRes.data.imageUrls?.[0] || '');
+      setReviews(reviewRes.data || []);
+    } catch (err) {
+      setError(getApiError(err, 'Không thể tải chi tiết sản phẩm.'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const response = await api.get(`/products/${id}`);
-        setProduct(response.data);
-        if (response.data.skus?.length > 0) {
-          setSelectedSku(response.data.skus[0]);
-        }
-      } catch (err) {
-        console.error('Failed to fetch product details', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleAddToCart = async () => {
+  const addToCart = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     if (!selectedSku) return;
     try {
       await api.post('/cart', { skuId: selectedSku.id, quantity });
-      alert('Đã thêm vào giỏ hàng thành công!');
+      alert('Đã thêm sản phẩm vào giỏ hàng.');
     } catch (err) {
-      alert(err.response?.data?.message || 'Vui lòng đăng nhập để mua hàng.');
+      alert(getApiError(err, 'Không thể thêm vào giỏ hàng.'));
     }
   };
 
-  const handleBuyNow = async () => {
-    if (!selectedSku) return;
-    try {
-      await api.post('/cart', { skuId: selectedSku.id, quantity });
-      navigate('/checkout');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Vui lòng đăng nhập để mua hàng.');
-    }
+  const buyNow = async () => {
+    await addToCart();
+    if (user) navigate('/checkout');
   };
 
-  if (loading) return (
-    <div className="flex justify-center py-40">
-      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  );
+  if (loading) return <main className="mx-auto max-w-7xl px-4 py-10 text-sm text-gray-500">Đang tải chi tiết sản phẩm...</main>;
 
-  if (!product) return (
-    <div className="max-w-7xl mx-auto p-20 text-center">
-      <h2 className="text-2xl font-black text-gray-300 uppercase tracking-widest text-center">Sản phẩm không tồn tại</h2>
-      <button onClick={() => navigate('/')} className="mt-8 text-primary font-black uppercase tracking-widest text-xs border-b-2 border-primary">Quay lại trang chủ</button>
-    </div>
-  );
+  if (error) return <main className="mx-auto max-w-7xl px-4 py-10"><Notice type="error" message={error} /></main>;
+
+  if (!product) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-10">
+        <EmptyState title="Không tìm thấy sản phẩm" action={<Link to="/" className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white">Quay lại danh sách</Link>} />
+      </main>
+    );
+  }
+
+  const inStock = Number(selectedSku?.stock || 0) > 0;
+  const imageUrls = product.imageUrls?.length ? product.imageUrls : ['https://via.placeholder.com/700'];
+  const activeImageUrl = selectedImageUrl || imageUrls[0];
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-16 md:py-24">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
-        {/* Left: Product Images */}
-        <div className="space-y-6">
-          <div className="aspect-[4/5] bg-gray-50 rounded-[48px] overflow-hidden border border-gray-100 shadow-2xl shadow-gray-200/50">
-            <img 
-              src={product.imageUrls?.[0] || 'https://via.placeholder.com/600x750?text=No+Image'} 
-              alt={product.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.src = 'https://via.placeholder.com/600x750?text=Link+Ảnh+Lỗi';
-                e.target.onerror = null;
-              }}
-            />
+    <main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+      <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
+        <section>
+          <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
+            <img src={activeImageUrl} alt={product.name} className="aspect-square w-full object-cover" />
           </div>
-          <div className="grid grid-cols-4 gap-4">
-            {product.imageUrls?.slice(1, 5).map((url, idx) => (
-              <div key={idx} className="aspect-square bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 hover:border-primary transition-colors cursor-pointer">
-                <img 
-                  src={url} 
-                  alt={`${product.name} ${idx}`} 
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/200x200?text=Lỗi';
-                    e.target.onerror = null;
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right: Product Info */}
-        <div className="flex flex-col">
-          <div className="mb-10">
-            <div className="flex items-center gap-4 mb-6">
-              <span className="text-[10px] font-black text-primary border-2 border-primary px-3 py-1 rounded-full uppercase tracking-[0.2em]">
-                {product.brandName || 'Thương hiệu'}
-              </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-200"></span>
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{product.categoryName || 'CHÍNH HÃNG'}</span>
+          {imageUrls.length > 1 && (
+            <div className="mt-3 grid grid-cols-4 gap-3 sm:grid-cols-5">
+              {imageUrls.slice(0, 10).map((url, index) => (
+                <button
+                  key={`${url}-${index}`}
+                  type="button"
+                  onClick={() => setSelectedImageUrl(url)}
+                  className={`overflow-hidden rounded-md border bg-white p-1 ${activeImageUrl === url ? 'border-primary ring-2 ring-primary/20' : 'border-gray-200 hover:border-gray-400'}`}
+                >
+                  <img src={url} alt={`${product.name} ${index + 1}`} className="aspect-square w-full object-cover" />
+                </button>
+              ))}
             </div>
-            
-            <h1 className="text-5xl md:text-6xl font-black text-dark tracking-tighter uppercase leading-[0.9] mb-8">
-              {product.name}
-            </h1>
-            
-            <div className="flex items-baseline gap-2 mb-10">
-              <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Giá niêm yết</span>
-              <div className="text-5xl font-black text-dark">
-                <span className="text-2xl mr-1">₫</span>
-                {selectedSku?.price?.toLocaleString() || '---'}
-              </div>
-            </div>
+          )}
+        </section>
 
-            <p className="text-gray-500 text-lg font-medium leading-relaxed italic mb-10 border-l-4 border-gray-100 pl-6">
-              "{product.description || 'Sản phẩm tuyệt vời từ những nghệ nhân tâm huyết, mang lại giá trị bền vững cho người sử dụng.'}"
-            </p>
+        <section className="rounded-md border border-gray-200 bg-white p-5">
+          <div className="text-sm text-gray-500">{product.brandName || 'Thương hiệu'} · {product.categoryName || 'Danh mục'}</div>
+          <h1 className="mt-2 text-3xl font-bold text-gray-950">{product.name}</h1>
+          <div className="mt-3 text-sm text-gray-500">
+            Đánh giá {Number(product.averageRating || 0).toFixed(1)}/5 · {product.reviewCount || 0} lượt đánh giá
+          </div>
+          <div className="mt-5 text-3xl font-bold text-red-600">{formatMoney(selectedSku?.price)}</div>
+          <p className="mt-5 text-sm leading-6 text-gray-600">{product.description || 'Chưa có mô tả sản phẩm.'}</p>
+
+          <div className="mt-6">
+            <div className="text-sm font-semibold text-gray-950">Phân loại</div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {product.skus?.map((sku) => (
+                <button
+                  key={sku.id}
+                  onClick={() => setSelectedSku(sku)}
+                  className={`rounded-md border px-3 py-2 text-sm font-semibold ${selectedSku?.id === sku.id ? 'border-primary bg-primary text-white' : 'border-gray-300 bg-white text-gray-700'}`}
+                >
+                  {sku.tierIndex || 'Mặc định'}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Selection */}
-          <div className="space-y-10 mb-12">
+          <div className="mt-5 grid grid-cols-[140px_1fr] gap-4">
             <div>
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Phân loại sản phẩm</label>
-              <div className="flex flex-wrap gap-3">
-                {product.skus?.map((sku) => (
-                  <button
-                    key={sku.id}
-                    onClick={() => setSelectedSku(sku)}
-                    className={`px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
-                      selectedSku?.id === sku.id 
-                      ? 'bg-dark text-white shadow-xl shadow-dark/20 scale-105' 
-                      : 'bg-white text-gray-400 border-2 border-gray-100 hover:border-dark hover:text-dark'
-                    }`}
-                  >
-                    Mẫu {sku.tierIndex}
-                  </button>
-                ))}
-              </div>
+              <label className="text-sm font-semibold text-gray-950">Số lượng</label>
+              <input
+                type="number"
+                min="1"
+                max={selectedSku?.stock || 1}
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
             </div>
-
-            <div className="flex items-center gap-10">
-              <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Số lượng</label>
-                <div className="flex items-center bg-gray-50 rounded-2xl p-1 border border-gray-100">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 flex items-center justify-center font-black text-dark hover:text-primary transition-colors text-xl">－</button>
-                  <span className="w-12 text-center font-black text-dark text-lg">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 flex items-center justify-center font-black text-dark hover:text-primary transition-colors text-xl">＋</button>
-                </div>
-              </div>
-              <div className="flex-grow">
-                 <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4">Kho hàng</div>
-                 <div className="text-dark font-black text-sm uppercase">{selectedSku?.stock || 0} sản phẩm sẵn có</div>
-              </div>
+            <div>
+              <div className="text-sm font-semibold text-gray-950">Tồn kho</div>
+              <div className="mt-2 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-600">{selectedSku?.stock || 0} sản phẩm</div>
             </div>
           </div>
 
-          <div className="mt-auto pt-8 border-t border-gray-100 flex flex-col sm:flex-row gap-4">
-            <button 
-              onClick={handleAddToCart}
-              className="flex-1 bg-dark text-white py-6 rounded-[24px] font-black uppercase tracking-[0.2em] text-xs hover:bg-primary transition-all active:scale-[0.98] shadow-2xl shadow-dark/10"
-            >
-              Thêm vào giỏ hàng
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button disabled={!inStock} onClick={addToCart} className="flex-1 rounded-md bg-gray-950 px-4 py-3 text-sm font-semibold text-white hover:bg-primary disabled:bg-gray-300">
+              Thêm vào giỏ
             </button>
-            <button onClick={handleBuyNow} className="flex-1 bg-white text-dark border-2 border-dark py-6 rounded-[24px] font-black uppercase tracking-[0.2em] text-xs hover:bg-gray-50 transition-all">
-              Mua ngay lập tức
+            <button disabled={!inStock} onClick={buyNow} className="flex-1 rounded-md border border-gray-950 px-4 py-3 text-sm font-semibold text-gray-950 hover:bg-gray-50 disabled:border-gray-300 disabled:text-gray-400">
+              Mua ngay
             </button>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
+        <section className="rounded-md border border-gray-200 bg-white p-5">
+          <h2 className="font-bold text-gray-950">Thông số kỹ thuật</h2>
+          {product.specs?.length ? (
+            <dl className="mt-4 divide-y divide-gray-100">
+              {product.specs.map((spec, index) => (
+                <div key={`${spec.key}-${index}`} className="grid grid-cols-[160px_1fr] gap-4 py-3 text-sm">
+                  <dt className="font-medium text-gray-500">{spec.key}</dt>
+                  <dd className="text-gray-950">{spec.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="mt-3 text-sm text-gray-500">Chưa có thông số kỹ thuật.</p>
+          )}
+        </section>
+
+        <section className="rounded-md border border-gray-200 bg-white p-5">
+          <h2 className="font-bold text-gray-950">Đánh giá sản phẩm</h2>
+          {reviews.length === 0 ? (
+            <p className="mt-3 text-sm text-gray-500">Chưa có đánh giá.</p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {reviews.map((review) => (
+                <div key={review.id} className="rounded-md bg-gray-50 p-3 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <span className="font-semibold text-gray-950">{review.customerName || `Khách hàng #${review.customerId}`}</span>
+                    <span className="font-semibold text-amber-600">{review.rating}/5</span>
+                  </div>
+                  {review.comment && <p className="mt-2 text-gray-600">{review.comment}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
   );
 };
 

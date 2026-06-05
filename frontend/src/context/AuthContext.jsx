@@ -9,8 +9,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const savedUser = localStorage.getItem('user');
       return savedUser ? JSON.parse(savedUser) : null;
-    } catch (error) {
-      console.error("AuthContext init error:", error);
+    } catch {
       return null;
     }
   });
@@ -32,8 +31,7 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await api.post('/auth/logout');
-    } catch (error) {
-      console.warn('Logout API failed, clearing local session only.', error);
+    } catch {
     } finally {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');

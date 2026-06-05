@@ -16,5 +16,5 @@ public interface ProductRepository {
     List<Product> findByApprovalStatusAndActiveTrue(ProductApprovalStatus approvalStatus);
     void delete(Product product);
     List<Product> searchProducts(String name, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice);
-    Page<Product> searchProductsPage(String name, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Pageable pageable);
+    Page<Product> searchProductsPage(String name, Long categoryId, Long brandId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Pageable pageable);
 }

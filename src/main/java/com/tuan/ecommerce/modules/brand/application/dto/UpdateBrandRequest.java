@@ -23,5 +23,7 @@ public class UpdateBrandRequest {
 
     private String logoUrl;
 
+    private String logoPublicId;
+
     private Boolean active;
 }

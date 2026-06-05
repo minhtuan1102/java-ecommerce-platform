@@ -15,6 +15,7 @@ public class CartItemResponse {
     private Long id; // CartItem ID
     private Long skuId;
     private String productName;
+    private String imageUrl;
     private String tierIndex;
     private BigDecimal price;
     private Integer quantity;

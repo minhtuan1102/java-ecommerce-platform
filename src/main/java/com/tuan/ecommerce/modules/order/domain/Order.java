@@ -49,6 +49,10 @@ public class Order extends BaseEntity {
     @Builder.Default
     private String shippingAddress = "";
 
+    @Column(name = "recipient_name", length = 100)
+    @Builder.Default
+    private String recipientName = "";
+
     @Column(name = "phone_number", nullable = false, length = 20)
     @Builder.Default
     private String phoneNumber = "";

@@ -34,6 +34,7 @@ public interface ProductJpaRepository extends JpaRepository<Product, Long> {
     @Query(value = "SELECT DISTINCT p FROM Product p LEFT JOIN p.skus s " +
             "WHERE (:name IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:name as string)), '%')) " +
             "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
+            "AND (:brandId IS NULL OR p.brand.id = :brandId) " +
             "AND (:minPrice IS NULL OR s.price >= :minPrice) " +
             "AND (:maxPrice IS NULL OR s.price <= :maxPrice) " +
             "AND p.active = true " +
@@ -41,6 +42,7 @@ public interface ProductJpaRepository extends JpaRepository<Product, Long> {
             countQuery = "SELECT COUNT(DISTINCT p.id) FROM Product p LEFT JOIN p.skus s " +
                     "WHERE (:name IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:name as string)), '%')) " +
                     "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
+                    "AND (:brandId IS NULL OR p.brand.id = :brandId) " +
                     "AND (:minPrice IS NULL OR s.price >= :minPrice) " +
                     "AND (:maxPrice IS NULL OR s.price <= :maxPrice) " +
                     "AND p.active = true " +
@@ -48,6 +50,7 @@ public interface ProductJpaRepository extends JpaRepository<Product, Long> {
     Page<Product> searchProductsPage(
             @Param("name") String name,
             @Param("categoryId") Long categoryId,
+            @Param("brandId") Long brandId,
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice,
             Pageable pageable

@@ -11,9 +11,11 @@ import com.tuan.ecommerce.modules.order.application.dto.OrderResponse;
 import com.tuan.ecommerce.modules.order.domain.Order;
 import com.tuan.ecommerce.modules.order.domain.OrderItem;
 import com.tuan.ecommerce.modules.order.domain.OrderStatus;
+import com.tuan.ecommerce.modules.order.domain.OrderStatusHistory;
 import com.tuan.ecommerce.modules.order.domain.PaymentMethod;
 import com.tuan.ecommerce.modules.order.infrastructure.mapper.OrderMapper;
 import com.tuan.ecommerce.modules.order.infrastructure.persistence.OrderRepository;
+import com.tuan.ecommerce.modules.order.infrastructure.persistence.OrderStatusHistoryRepository;
 import com.tuan.ecommerce.modules.payment.application.PaymentService;
 import com.tuan.ecommerce.modules.product.domain.ProductSKU;
 import com.tuan.ecommerce.modules.product.infrastructure.persistence.ProductSkuRepository;
@@ -37,8 +39,9 @@ public class OrderService {
     private final OrderMapper orderMapper;
     private final InventoryService inventoryService;
     private final PaymentService paymentService;
+    private final OrderStatusHistoryRepository statusHistoryRepository;
 
-    public OrderService(OrderRepository orderRepository, CartRepository cartRepository, UserRepository userRepository, ProductSkuRepository skuRepository, OrderMapper orderMapper, InventoryService inventoryService, PaymentService paymentService) {
+    public OrderService(OrderRepository orderRepository, CartRepository cartRepository, UserRepository userRepository, ProductSkuRepository skuRepository, OrderMapper orderMapper, InventoryService inventoryService, PaymentService paymentService, OrderStatusHistoryRepository statusHistoryRepository) {
         this.orderRepository = orderRepository;
         this.cartRepository = cartRepository;
         this.userRepository = userRepository;
@@ -46,6 +49,7 @@ public class OrderService {
         this.orderMapper = orderMapper;
         this.inventoryService = inventoryService;
         this.paymentService = paymentService;
+        this.statusHistoryRepository = statusHistoryRepository;
     }
 
     @Transactional
@@ -62,6 +66,7 @@ public class OrderService {
 
         Order order = new Order();
         order.setUser(user);
+        order.setRecipientName(request.getRecipientName().trim());
         order.setShippingAddress(request.getShippingAddress());
         order.setPhoneNumber(request.getPhoneNumber());
         order.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.COD);
@@ -76,6 +81,9 @@ public class OrderService {
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .sku(sku)
+                    .productName(sku.getProduct().getName())
+                    .skuCode(sku.getSkuCode())
+                    .tierIndex(sku.getTierIndex())
                     .quantity(cartItem.getQuantity())
                     .price(sku.getPrice())
                     .build();
@@ -86,6 +94,7 @@ public class OrderService {
         
         order.setTotalAmount(totalAmount);
         Order savedOrder = orderRepository.save(order);
+        recordStatusHistory(savedOrder, savedOrder.getStatus(), userEmail, "Order created");
         
         // Reserve inventory
         inventoryService.reserveForOrder(savedOrder, new ArrayList<>(cart.getItems()), userEmail);
@@ -108,6 +117,16 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public List<OrderResponse> getAllOrders(String userEmail) {
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (!isAdmin(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to view all orders");
+        }
+        return orderMapper.toResponseList(orderRepository.findAll());
+    }
+
+    @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long orderId, String userEmail) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
@@ -115,7 +134,7 @@ public class OrderService {
         User user = userRepository.findByEmailIgnoreCase(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        boolean isAdmin = user.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+        boolean isAdmin = isAdmin(user);
         boolean isBuyer = order.getUser().getId().equals(user.getId());
         if (!isAdmin && !isBuyer) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to view this order");
@@ -154,7 +173,7 @@ public class OrderService {
         User user = userRepository.findByEmailIgnoreCase(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        boolean isAdmin = user.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+        boolean isAdmin = isAdmin(user);
         if (!isAdmin) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to update this order");
         }
@@ -166,7 +185,9 @@ public class OrderService {
         }
 
         order.setStatus(status);
-        return orderMapper.toResponse(orderRepository.save(order));
+        Order savedOrder = orderRepository.save(order);
+        recordStatusHistory(savedOrder, status, userEmail, "Order status changed to " + status);
+        return orderMapper.toResponse(savedOrder);
     }
 
     private void validateStatusTransition(OrderStatus currentStatus, OrderStatus requestedStatus) {
@@ -187,5 +208,18 @@ public class OrderService {
                     "Invalid order status transition: " + currentStatus + " -> " + requestedStatus
             );
         }
+    }
+
+    private boolean isAdmin(User user) {
+        return user.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+    }
+
+    private void recordStatusHistory(Order order, OrderStatus status, String changedBy, String note) {
+        statusHistoryRepository.save(OrderStatusHistory.builder()
+                .order(order)
+                .status(status)
+                .changedBy(changedBy)
+                .note(note)
+                .build());
     }
 }

@@ -1,141 +1,155 @@
 import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { useNavigate } from 'react-router-dom';
+import Notice from '../components/Notice';
+import { formatMoney, getApiError } from '../utils/format';
 
 const Checkout = () => {
+  const navigate = useNavigate();
   const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [shippingAddress, setShippingAddress] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [addressForm, setAddressForm] = useState({
+    street: '',
+    hamlet: '',
+    ward: '',
+    province: '',
+  });
   const [phoneNumber, setPhoneNumber] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('COD');
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const navigate = useNavigate();
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchCart = async () => {
+    let active = true;
+    (async () => {
       try {
         const response = await api.get('/cart');
+        if (!active) return;
         setCart(response.data);
-        if (!response.data || !response.data.items || response.data.items.length === 0) {
-          navigate('/cart'); // Redirect to cart if empty
-        }
+        if (!response.data?.items?.length) navigate('/cart');
       } catch (err) {
-        console.error('Failed to fetch cart', err);
+        if (active) setError(getApiError(err, 'Không thể tải giỏ hàng.'));
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
+    })();
+    return () => {
+      active = false;
     };
-    fetchCart();
   }, [navigate]);
 
-  const handleCheckout = async (e) => {
-    e.preventDefault();
-    if (!shippingAddress.trim() || !phoneNumber.trim()) {
-      alert('Vui lòng nhập đầy đủ thông tin nhận hàng.');
-      return;
-    }
+  const submitCheckout = async (event) => {
+    event.preventDefault();
+    const shippingAddress = [
+      addressForm.street,
+      addressForm.hamlet,
+      addressForm.ward,
+      addressForm.province,
+    ]
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join(', ');
 
     setSubmitting(true);
+    setError('');
     try {
-      await api.post('/orders/checkout', { shippingAddress, phoneNumber, paymentMethod });
-      alert('Đặt hàng thành công!');
+      await api.post('/orders/checkout', { recipientName, shippingAddress, phoneNumber, paymentMethod });
       navigate('/my-orders');
     } catch (err) {
-      alert(err.response?.data?.message || 'Có lỗi xảy ra khi đặt hàng.');
+      setError(getApiError(err, 'Không thể đặt hàng.'));
+    } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Đang tải thông tin...</div>;
-
-  const totalAmount = cart?.totalAmount || 0;
+  if (loading) return <main className="mx-auto max-w-5xl px-4 py-6 text-sm text-gray-500">Đang tải thanh toán...</main>;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 pb-20">
-      <div className="mb-10">
-        <h1 className="text-3xl font-black text-gray-800 tracking-tight uppercase">Thanh toán</h1>
-        <div className="h-1.5 w-12 bg-primary mt-2 rounded-full"></div>
+    <main className="mx-auto max-w-5xl px-4 py-6 md:px-6">
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold text-gray-950">Thanh toán</h1>
+        <p className="mt-1 text-sm text-gray-500">Nhập thông tin nhận hàng và xác nhận đơn.</p>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 mb-6">
-                <h2 className="text-xl font-black mb-6 uppercase">Thông tin nhận hàng</h2>
-                <form id="checkout-form" onSubmit={handleCheckout} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Địa chỉ nhận hàng <span className="text-red-500">*</span></label>
-                        <input 
-                            type="text" 
-                            required
-                            value={shippingAddress} 
-                            onChange={e => setShippingAddress(e.target.value)} 
-                            placeholder="Số nhà, Tên đường, Xã/Phường, Quận/Huyện, Tỉnh/Thành phố"
-                            className="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Số điện thoại <span className="text-red-500">*</span></label>
-                        <input 
-                            type="tel" 
-                            required
-                            value={phoneNumber} 
-                            onChange={e => setPhoneNumber(e.target.value)} 
-                            placeholder="Số điện thoại liên hệ"
-                            className="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Phương thức thanh toán <span className="text-red-500">*</span></label>
-                        <select
-                            value={paymentMethod}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                        >
-                            <option value="COD">Thanh toán khi nhận hàng (COD)</option>
-                        </select>
-                    </div>
-                </form>
-            </div>
-        </div>
 
-        <div>
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                <h2 className="text-xl font-black mb-6 uppercase">Tóm tắt đơn hàng</h2>
-                <div className="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2">
-                    {cart?.items?.map(item => (
-                        <div key={item.id} className="border-b border-gray-50 pb-4 last:border-0">
-                                <div key={item.id} className="flex justify-between items-center text-sm mb-2">
-                                    <div className="flex-1 pr-4">
-                                        <p className="line-clamp-1 font-medium">{item.productName}</p>
-                                        <p className="text-xs text-gray-500">x{item.quantity}</p>
-                                    </div>
-                                    <div className="font-black text-primary">
-                                        ₫{(item.price * item.quantity).toLocaleString()}
-                                    </div>
-                                </div>
-                        </div>
-                    ))}
-                </div>
-                
-                <div className="border-t border-gray-100 pt-4">
-                    <div className="flex justify-between items-center text-lg font-black">
-                        <span>Tổng thanh toán:</span>
-                        <span className="text-primary text-2xl">₫{totalAmount.toLocaleString()}</span>
-                    </div>
-                </div>
+      {error && <div className="mb-4"><Notice type="error" message={error} /></div>}
 
-                <button 
-                    type="submit" 
-                    form="checkout-form"
-                    disabled={submitting}
-                    className="w-full mt-8 bg-primary hover:bg-primary-dark text-white font-black py-4 rounded-xl shadow-lg shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest"
-                >
-                    {submitting ? 'Đang xử lý...' : 'Đặt hàng ngay'}
-                </button>
+      <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+        <form id="checkout-form" onSubmit={submitCheckout} className="rounded-md border border-gray-200 bg-white p-5">
+          <h2 className="font-bold text-gray-950">Thông tin nhận hàng</h2>
+          <div className="mt-4 space-y-4">
+            <input
+              required
+              value={recipientName}
+              onChange={(e) => setRecipientName(e.target.value)}
+              placeholder="Tên người nhận"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <input
+                required
+                value={addressForm.street}
+                onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+                placeholder="Số nhà, tên đường"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
+              <input
+                required
+                value={addressForm.hamlet}
+                onChange={(e) => setAddressForm({ ...addressForm, hamlet: e.target.value })}
+                placeholder="Thôn/ấp/tổ"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
+              <input
+                required
+                value={addressForm.ward}
+                onChange={(e) => setAddressForm({ ...addressForm, ward: e.target.value })}
+                placeholder="Xã/phường/thị trấn"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
+              <input
+                required
+                value={addressForm.province}
+                onChange={(e) => setAddressForm({ ...addressForm, province: e.target.value })}
+                placeholder="Tỉnh/thành phố"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
             </div>
-        </div>
+            <input required value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Số điện thoại liên hệ" className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+              <option value="COD">Thanh toán khi nhận hàng (COD)</option>
+              <option value="ONLINE" disabled>Thanh toán trực tuyến (sẽ tích hợp sau)</option>
+            </select>
+          </div>
+        </form>
+
+        <aside className="h-fit rounded-md border border-gray-200 bg-white p-5">
+          <h2 className="font-bold text-gray-950">Đơn hàng</h2>
+          <div className="mt-4 space-y-3">
+            {cart?.items?.map((item) => (
+              <div key={item.id} className="flex justify-between gap-3 text-sm">
+                <div className="flex min-w-0 gap-3">
+                  <img src={item.imageUrl || 'https://via.placeholder.com/80'} alt={item.productName} className="h-14 w-14 flex-none rounded-md object-cover" />
+                  <div className="min-w-0">
+                  <div className="font-medium text-gray-950">{item.productName}</div>
+                  <div className="text-xs text-gray-500">x{item.quantity}</div>
+                  </div>
+                </div>
+                <div className="flex-none font-semibold">{formatMoney(item.subtotal)}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 border-t border-gray-100 pt-4 flex justify-between">
+            <span className="font-semibold">Tổng thanh toán</span>
+            <span className="text-lg font-bold text-red-600">{formatMoney(cart?.totalAmount)}</span>
+          </div>
+          <button form="checkout-form" disabled={submitting} className="mt-5 w-full rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60">
+            {submitting ? 'Đang đặt hàng...' : 'Đặt hàng'}
+          </button>
+          <Link to="/cart" className="mt-3 block text-center text-sm font-semibold text-gray-600">Quay lại giỏ hàng</Link>
+        </aside>
       </div>
-    </div>
+    </main>
   );
 };
 

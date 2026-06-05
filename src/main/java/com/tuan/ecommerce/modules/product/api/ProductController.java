@@ -28,6 +28,7 @@ public class ProductController {
     public ResponseEntity<PageResponse<ProductResponse>> getProducts(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long brandId,
             @RequestParam(required = false) java.math.BigDecimal minPrice,
             @RequestParam(required = false) java.math.BigDecimal maxPrice,
             @RequestParam(defaultValue = "0") int page,
@@ -35,7 +36,7 @@ public class ProductController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
         return ResponseEntity.ok(productService.searchProductsPage(
-                name, categoryId, minPrice, maxPrice, page, size, sortBy, sortDir
+                name, categoryId, brandId, minPrice, maxPrice, page, size, sortBy, sortDir
         ));
     }
 

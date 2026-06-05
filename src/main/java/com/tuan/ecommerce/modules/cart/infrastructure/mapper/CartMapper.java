@@ -4,6 +4,7 @@ import com.tuan.ecommerce.modules.cart.application.dto.CartItemResponse;
 import com.tuan.ecommerce.modules.cart.application.dto.CartResponse;
 import com.tuan.ecommerce.modules.cart.domain.Cart;
 import com.tuan.ecommerce.modules.cart.domain.CartItem;
+import com.tuan.ecommerce.modules.product.domain.ProductImage;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -39,10 +40,24 @@ public class CartMapper {
                 .id(item.getId())
                 .skuId(item.getSku().getId())
                 .productName(item.getSku().getProduct().getName())
+                .imageUrl(getMainImageUrl(item))
                 .tierIndex(item.getSku().getTierIndex())
                 .price(item.getSku().getPrice())
                 .quantity(item.getQuantity())
                 .subtotal(subtotal)
                 .build();
+    }
+
+    private String getMainImageUrl(CartItem item) {
+        List<ProductImage> images = item.getSku().getProduct().getImages();
+        if (images == null || images.isEmpty()) {
+            return null;
+        }
+
+        return images.stream()
+                .filter(ProductImage::isMain)
+                .findFirst()
+                .orElse(images.get(0))
+                .getUrl();
     }
 }

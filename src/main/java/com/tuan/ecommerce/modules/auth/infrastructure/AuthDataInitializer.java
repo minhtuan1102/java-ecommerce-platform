@@ -9,6 +9,7 @@ import com.tuan.ecommerce.modules.category.infrastructure.persistence.CategoryRe
 import com.tuan.ecommerce.modules.brand.domain.Brand;
 import com.tuan.ecommerce.modules.brand.infrastructure.persistence.BrandRepository;
 import com.tuan.ecommerce.modules.product.domain.Product;
+import com.tuan.ecommerce.modules.product.domain.ProductApprovalStatus;
 import com.tuan.ecommerce.modules.product.domain.ProductImage;
 import com.tuan.ecommerce.modules.product.domain.ProductSKU;
 import com.tuan.ecommerce.modules.product.infrastructure.persistence.ProductRepository;
@@ -55,13 +56,12 @@ public class AuthDataInitializer implements CommandLineRunner {
         seedRoles();
         seedUsers();
         Map<String, Category> categoriesByName = seedCategories();
-        Brand defaultBrand = seedDefaultBrand();
-        seedCatalogProducts(defaultBrand, categoriesByName);
+        Map<String, Brand> brandsByName = seedBrands();
+        seedCatalogProducts(brandsByName, categoriesByName);
     }
 
     private void seedRoles() {
         if (roleRepository.count() == 0) {
-            System.out.println("Seed: Creating default roles");
             roleRepository.save(new Role("ROLE_CUSTOMER"));
             roleRepository.save(new Role("ROLE_ADMIN"));
         }
@@ -69,7 +69,6 @@ public class AuthDataInitializer implements CommandLineRunner {
 
     private void seedUsers() {
         if (userRepository.count() == 0) {
-            System.out.println("Seed: Creating default users");
             Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
                     .orElseThrow(() -> new RuntimeException("Role CUSTOMER not found"));
             Role adminRole = roleRepository.findByName("ROLE_ADMIN")
@@ -96,96 +95,214 @@ public class AuthDataInitializer implements CommandLineRunner {
     }
 
     private Map<String, Category> seedCategories() {
+        Category electronics = ensureCategoryExists("Điện tử", "Thiết bị điện tử và phụ kiện", null);
+        ensureCategoryExists("Điện thoại", "Điện thoại di động và smartphone", electronics);
+        ensureCategoryExists("Máy tính", "Máy tính xách tay và máy tính để bàn", electronics);
+        ensureCategoryExists("Tivi", "Smart TV và hệ thống giải trí", electronics);
+
+        Category appliances = ensureCategoryExists("Điện gia dụng", "Các thiết bị điện gia dụng trong gia đình", null);
+        ensureCategoryExists("Đồ dùng nhà bếp", "Tủ lạnh, lò vi sóng, v.v.", appliances);
+        ensureCategoryExists("Thiết bị làm sạch", "Máy hút bụi, máy lọc không khí", appliances);
+
+        Category fashion = ensureCategoryExists("Thời trang", "Quần áo, giày dép và phụ kiện", null);
+        ensureCategoryExists("Thời trang nam", "Trang phục và phụ kiện dành cho nam", fashion);
+        ensureCategoryExists("Thời trang nữ", "Trang phục và phụ kiện dành cho nữ", fashion);
+
+        Category home = ensureCategoryExists("Nhà cửa", "Đồ dùng và trang trí nhà cửa", null);
+        ensureCategoryExists("Nội thất", "Bàn ghế, kệ tủ và đồ nội thất", home);
+        ensureCategoryExists("Trang trí", "Đèn, tranh và vật dụng trang trí", home);
+
         Map<String, Category> result = new HashMap<>();
-
-        if (categoryRepository.count() == 0) {
-            System.out.println("Seed: Creating default categories");
-            Category electronics = createCategory("Electronics", "Electronic devices and accessories");
-            Category smartphones = createCategory("Smartphones", "Mobile phones", electronics);
-            Category laptops = createCategory("Laptops", "Laptops and computers", electronics);
-
-            Category fashion = createCategory("Fashion", "Clothing and apparel");
-            Category mensFashion = createCategory("Men's Fashion", "Men's clothing", fashion);
-            Category womensFashion = createCategory("Women's Fashion", "Women's clothing", fashion);
-
-            categoryRepository.saveAll(List.of(electronics, smartphones, laptops, fashion, mensFashion, womensFashion));
-
-            result.put("Smartphones", smartphones);
-            result.put("Laptops", laptops);
-            result.put("Men's Fashion", mensFashion);
-            result.put("Women's Fashion", womensFashion);
-        } else {
-            List<Category> allCategories = categoryRepository.findAll();
-            for (Category cat : allCategories) {
-                result.put(cat.getName(), cat);
-            }
+        List<Category> allCategories = categoryRepository.findAll();
+        for (Category cat : allCategories) {
+            result.put(cat.getName(), cat);
         }
-
         return result;
     }
 
-    private Category createCategory(String name, String description) {
-        return createCategory(name, description, null);
+    private Category ensureCategoryExists(String name, String description, Category parent) {
+        return categoryRepository.findAll().stream()
+                .filter(c -> c.getName().equalsIgnoreCase(name))
+                .findFirst()
+                .orElseGet(() -> {
+                    Category category = Category.builder()
+                            .name(name)
+                            .description(description)
+                            .parent(parent)
+                            .active(true)
+                            .build();
+                    category.generateSlug();
+                    return categoryRepository.save(category);
+                });
     }
 
-    private Category createCategory(String name, String description, Category parent) {
-        return Category.builder()
-                .name(name)
-                .description(description)
-                .parent(parent)
-                .active(true)
-                .build();
+    private Map<String, Brand> seedBrands() {
+        List<Brand> brands = List.of(
+                ensureBrandExists("Generic", "Thương hiệu chung", "https://via.placeholder.com/150"),
+                ensureBrandExists("Apple", "Thiết bị công nghệ Apple", "https://via.placeholder.com/150?text=Apple"),
+                ensureBrandExists("Samsung", "Thiết bị điện tử và gia dụng Samsung", "https://via.placeholder.com/150?text=Samsung"),
+                ensureBrandExists("Sony", "Thiết bị nghe nhìn Sony", "https://via.placeholder.com/150?text=Sony"),
+                ensureBrandExists("Sharp", "Thiết bị gia dụng Sharp", "https://via.placeholder.com/150?text=Sharp"),
+                ensureBrandExists("Anker", "Phụ kiện sạc và thiết bị thông minh", "https://via.placeholder.com/150?text=Anker"),
+                ensureBrandExists("Uniqlo", "Thời trang cơ bản hằng ngày", "https://via.placeholder.com/150?text=Uniqlo"),
+                ensureBrandExists("IKEA", "Nội thất và đồ dùng nhà cửa", "https://via.placeholder.com/150?text=IKEA")
+        );
+
+        return brands.stream().collect(Collectors.toMap(Brand::getName, brand -> brand));
     }
 
-    private Brand seedDefaultBrand() {
-        return brandRepository.findByName("Generic")
-                .orElseGet(() -> brandRepository.save(Brand.builder()
-                        .name("Generic")
-                        .description("Generic brand")
-                        .logoUrl("https://via.placeholder.com/150")
-                        .build()));
+    private Brand ensureBrandExists(String name, String description, String logoUrl) {
+        return brandRepository.findByName(name)
+                .orElseGet(() -> {
+                    Brand brand = Brand.builder()
+                            .name(name)
+                            .description(description)
+                            .logoUrl(logoUrl)
+                            .build();
+                    brand.generateSlug();
+                    return brandRepository.save(brand);
+                });
     }
 
-    private void seedCatalogProducts(Brand brand, Map<String, Category> categoriesByName) {
+    private void seedCatalogProducts(Map<String, Brand> brandsByName, Map<String, Category> categoriesByName) {
         Set<String> existingProductNames = productRepository.findAll().stream()
                 .map(Product::getName)
                 .collect(Collectors.toSet());
 
         if (!existingProductNames.contains("iPhone 15 Pro Max")) {
-            seedProductIfMissing(brand,
+            seedProductIfMissing(brandsByName.get("Apple"),
                     "iPhone 15 Pro Max",
-                    "Latest Apple flagship smartphone with titanium design.",
-                    categoriesByName.get("Smartphones"),
+                    "Điện thoại flagship mới nhất của Apple với thiết kế titan.",
+                    categoriesByName.get("Điện thoại"),
                     "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-max-blue-titanium-select",
-                    new BigDecimal("1199.00"), 50);
+                    new BigDecimal("34990000"), 50);
         }
 
-        if (!existingProductNames.contains("MacBook Pro M3 14-inch")) {
-            seedProductIfMissing(brand,
-                    "MacBook Pro M3 14-inch",
-                    "Supercharged by M3, M3 Pro, and M3 Max chips.",
-                    categoriesByName.get("Laptops"),
+        if (!existingProductNames.contains("MacBook Pro M3 14 inch")) {
+            seedProductIfMissing(brandsByName.get("Apple"),
+                    "MacBook Pro M3 14 inch",
+                    "Mạnh mẽ vượt trội với chip M3, M3 Pro và M3 Max.",
+                    categoriesByName.get("Máy tính"),
                     "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp14-spacegray-select-202310",
-                    new BigDecimal("1599.00"), 30);
+                    new BigDecimal("49990000"), 30);
         }
 
-        if (!existingProductNames.contains("Classic Cotton T-Shirt")) {
-            seedProductIfMissing(brand,
-                    "Classic Cotton T-Shirt",
-                    "Comfortable 100% cotton t-shirt for everyday wear.",
-                    categoriesByName.get("Men's Fashion"),
-                    "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&q=80",
-                    new BigDecimal("19.99"), 200);
+        if (!existingProductNames.contains("Tivi Sony Bravia 4K 55 inch")) {
+            seedProductIfMissing(brandsByName.get("Sony"),
+                    "Tivi Sony Bravia 4K 55 inch",
+                    "Trải nghiệm chất lượng hình ảnh 4K HDR tuyệt đỉnh cùng các tính năng Smart TV.",
+                    categoriesByName.get("Tivi"),
+                    "https://via.placeholder.com/500x500?text=Sony+Bravia+TV",
+                    new BigDecimal("15990000"), 20);
         }
 
-        if (!existingProductNames.contains("Floral Summer Dress")) {
-            seedProductIfMissing(brand,
-                    "Floral Summer Dress",
-                    "Light and breezy dress perfect for summer days.",
-                    categoriesByName.get("Women's Fashion"),
-                    "https://images.unsplash.com/photo-1572804013309-82a89b4f959c?w=500&q=80",
-                    new BigDecimal("39.99"), 100);
+        if (!existingProductNames.contains("Tủ lạnh Samsung Inverter 400L")) {
+            seedProductIfMissing(brandsByName.get("Samsung"),
+                    "Tủ lạnh Samsung Inverter 400L",
+                    "Máy nén biến tần kỹ thuật số tiết kiệm điện với công nghệ Twin Cooling Plus.",
+                    categoriesByName.get("Đồ dùng nhà bếp"),
+                    "https://via.placeholder.com/500x500?text=Samsung+Fridge",
+                    new BigDecimal("12500000"), 15);
         }
+
+        if (!existingProductNames.contains("Máy lọc không khí Sharp KC-G40EV-W")) {
+            seedProductIfMissing(brandsByName.get("Sharp"),
+                    "Máy lọc không khí Sharp KC-G40EV-W",
+                    "Công nghệ Plasmacluster Ion giúp không khí sạch và trong lành.",
+                    categoriesByName.get("Thiết bị làm sạch"),
+                    "https://via.placeholder.com/500x500?text=Sharp+Air+Purifier",
+                    new BigDecimal("6800000"), 40);
+        }
+
+        if (!existingProductNames.contains("Samsung Galaxy S24 Ultra")) {
+            seedProductIfMissing(brandsByName.get("Samsung"),
+                    "Samsung Galaxy S24 Ultra",
+                    "Smartphone cao cấp với màn hình Dynamic AMOLED, bút S Pen và camera zoom xa.",
+                    categoriesByName.get("Điện thoại"),
+                    "https://via.placeholder.com/500x500?text=Galaxy+S24+Ultra",
+                    new BigDecimal("28990000"), 35);
+        }
+
+        if (!existingProductNames.contains("Tai nghe Sony WH-1000XM5")) {
+            seedProductIfMissing(brandsByName.get("Sony"),
+                    "Tai nghe Sony WH-1000XM5",
+                    "Tai nghe chống ồn chủ động, pin dài và chất âm chi tiết.",
+                    categoriesByName.get("Điện tử"),
+                    "https://via.placeholder.com/500x500?text=Sony+WH-1000XM5",
+                    new BigDecimal("7990000"), 25);
+        }
+
+        if (!existingProductNames.contains("Sạc nhanh Anker Nano 65W")) {
+            seedProductIfMissing(brandsByName.get("Anker"),
+                    "Sạc nhanh Anker Nano 65W",
+                    "Củ sạc GaN nhỏ gọn hỗ trợ sạc nhanh laptop, tablet và điện thoại.",
+                    categoriesByName.get("Điện tử"),
+                    "https://via.placeholder.com/500x500?text=Anker+Nano+65W",
+                    new BigDecimal("890000"), 120);
+        }
+
+        if (!existingProductNames.contains("Áo thun nam cotton basic")) {
+            seedProductIfMissing(brandsByName.get("Uniqlo"),
+                    "Áo thun nam cotton basic",
+                    "Áo thun cotton mềm, form dễ mặc cho sinh hoạt hằng ngày.",
+                    categoriesByName.get("Thời trang nam"),
+                    "https://via.placeholder.com/500x500?text=Men+Cotton+T-Shirt",
+                    new BigDecimal("249000"), 200);
+        }
+
+        if (!existingProductNames.contains("Váy midi nữ dáng suông")) {
+            seedProductIfMissing(brandsByName.get("Uniqlo"),
+                    "Váy midi nữ dáng suông",
+                    "Váy midi nhẹ, dáng suông thanh lịch cho đi làm và đi chơi.",
+                    categoriesByName.get("Thời trang nữ"),
+                    "https://via.placeholder.com/500x500?text=Midi+Dress",
+                    new BigDecimal("599000"), 80);
+        }
+
+        if (!existingProductNames.contains("Kệ sách IKEA Billy 5 tầng")) {
+            seedProductIfMissing(brandsByName.get("IKEA"),
+                    "Kệ sách IKEA Billy 5 tầng",
+                    "Kệ sách 5 tầng tối giản, dễ phối với phòng khách hoặc góc làm việc.",
+                    categoriesByName.get("Nội thất"),
+                    "https://via.placeholder.com/500x500?text=IKEA+Billy+Shelf",
+                    new BigDecimal("1890000"), 45);
+        }
+
+        if (!existingProductNames.contains("Đèn bàn LED chống cận")) {
+            seedProductIfMissing(brandsByName.get("Generic"),
+                    "Đèn bàn LED chống cận",
+                    "Đèn bàn LED nhiều mức sáng, phù hợp học tập và làm việc tại nhà.",
+                    categoriesByName.get("Trang trí"),
+                    "https://via.placeholder.com/500x500?text=LED+Desk+Lamp",
+                    new BigDecimal("459000"), 90);
+        }
+
+        approveSeedProducts();
+    }
+
+    private void approveSeedProducts() {
+        Set<String> seedProductNames = Set.of(
+                "iPhone 15 Pro Max",
+                "MacBook Pro M3 14 inch",
+                "Tivi Sony Bravia 4K 55 inch",
+                "Tủ lạnh Samsung Inverter 400L",
+                "Máy lọc không khí Sharp KC-G40EV-W",
+                "Samsung Galaxy S24 Ultra",
+                "Tai nghe Sony WH-1000XM5",
+                "Sạc nhanh Anker Nano 65W",
+                "Áo thun nam cotton basic",
+                "Váy midi nữ dáng suông",
+                "Kệ sách IKEA Billy 5 tầng",
+                "Đèn bàn LED chống cận"
+        );
+
+        productRepository.findAll().stream()
+                .filter(product -> seedProductNames.contains(product.getName()))
+                .filter(product -> product.getApprovalStatus() != ProductApprovalStatus.APPROVED)
+                .forEach(product -> {
+                    product.setApprovalStatus(ProductApprovalStatus.APPROVED);
+                    productRepository.save(product);
+                });
     }
 
     private void seedProductIfMissing(Brand brand,
@@ -195,16 +312,15 @@ public class AuthDataInitializer implements CommandLineRunner {
                                       String imageUrl,
                                       BigDecimal price,
                                       int stock) {
-        
-        System.out.println("Seed: Creating product - " + name);
-
         Product product = Product.builder()
                 .name(name)
                 .description(description)
                 .category(category)
                 .brand(brand)
                 .active(true)
+                .approvalStatus(ProductApprovalStatus.APPROVED)
                 .build();
+        product.generateSlug();
 
         List<ProductImage> images = new ArrayList<>();
         images.add(ProductImage.builder()

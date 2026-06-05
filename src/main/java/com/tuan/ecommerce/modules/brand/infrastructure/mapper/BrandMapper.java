@@ -20,7 +20,8 @@ public class BrandMapper {
                 .name(request.getName().trim())
                 .slug(slug)
                 .description(normalizeDescription(request.getDescription()))
-                .logoUrl(request.getLogoUrl())
+                .logoUrl(normalizeText(request.getLogoUrl()))
+                .logoPublicId(normalizeText(request.getLogoPublicId()))
                 .active(true)
                 .build();
     }
@@ -34,7 +35,8 @@ public class BrandMapper {
         brand.setSlug(slug);
         
         brand.setDescription(normalizeDescription(request.getDescription()));
-        brand.setLogoUrl(request.getLogoUrl());
+        brand.setLogoUrl(normalizeText(request.getLogoUrl()));
+        brand.setLogoPublicId(normalizeText(request.getLogoPublicId()));
         
         if (request.getActive() != null) {
             brand.setActive(request.getActive());
@@ -50,6 +52,7 @@ public class BrandMapper {
                 .slug(brand.getSlug())
                 .description(brand.getDescription())
                 .logoUrl(brand.getLogoUrl())
+                .logoPublicId(brand.getLogoPublicId())
                 .active(brand.isActive())
                 .createdAt(brand.getCreatedAt())
                 .updatedAt(brand.getUpdatedAt())
@@ -60,10 +63,14 @@ public class BrandMapper {
         return brands.stream().map(this::toResponse).toList();
     }
     public String normalizeDescription (String description){
-        if (description == null) {
+        return normalizeText(description);
+    }
+
+    public String normalizeText(String value) {
+        if (value == null) {
             return null;
         }
-        String trimmed = description.trim();
+        String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 }

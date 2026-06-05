@@ -54,8 +54,8 @@ public class ProductRepositoryAdapter implements ProductRepository {
     }
 
     @Override
-    public Page<Product> searchProductsPage(String name, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Pageable pageable) {
-        return productJpaRepository.searchProductsPage(name, categoryId, minPrice, maxPrice, pageable);
+    public Page<Product> searchProductsPage(String name, Long categoryId, Long brandId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, Pageable pageable) {
+        return productJpaRepository.searchProductsPage(name, categoryId, brandId, minPrice, maxPrice, pageable);
     }
 
     @Override
