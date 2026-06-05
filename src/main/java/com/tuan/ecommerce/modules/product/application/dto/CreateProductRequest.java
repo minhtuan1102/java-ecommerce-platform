@@ -22,7 +22,8 @@ public class CreateProductRequest {
 
     private String description;
     
-    private String brand;
+    @NotNull(message = "Brand ID is required")
+    private Long brandId;
 
     @NotNull(message = "Category ID is required")
     private Long categoryId;
@@ -31,4 +32,6 @@ public class CreateProductRequest {
     private List<SkuRequest> skus;
 
     private List<String> imageUrls;
+
+    private List<SpecRequest> specs;
 }

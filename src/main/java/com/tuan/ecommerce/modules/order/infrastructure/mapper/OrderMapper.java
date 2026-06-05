@@ -20,10 +20,7 @@ public class OrderMapper {
 
         return OrderResponse.builder()
                 .id(order.getId())
-                .shopId(order.getShop().getId())
-                .shopName(order.getShop().getName())
                 .userId(order.getUser().getId())
-                .userName(order.getUser().getUsername())
                 .shippingAddress(order.getShippingAddress())
                 .phoneNumber(order.getPhoneNumber())
                 .paymentMethod(order.getPaymentMethod())

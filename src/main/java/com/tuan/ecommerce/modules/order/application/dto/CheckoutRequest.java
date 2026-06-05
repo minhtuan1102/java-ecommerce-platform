@@ -6,6 +6,8 @@ import lombok.Data;
 
 @Data
 public class CheckoutRequest {
+    private Long addressId;
+
     @NotBlank(message = "Địa chỉ nhận hàng không được để trống")
     private String shippingAddress;
     

@@ -9,5 +9,4 @@ public interface OrderRepository {
     Order save(Order order);
     Optional<Order> findById(Long id);
     List<Order> findByUserId(Long userId);
-    List<Order> findByShopId(Long shopId);
 }

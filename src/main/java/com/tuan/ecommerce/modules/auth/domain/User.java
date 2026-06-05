@@ -1,5 +1,6 @@
 package com.tuan.ecommerce.modules.auth.domain;
 
+import com.tuan.ecommerce.common.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -39,7 +40,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -67,21 +68,8 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<RefreshToken> refreshTokens = new ArrayList<>();
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Builder.Default
+    @Column(name = "is_active", nullable = false)
+    private boolean active = true;
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    public void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-    }
-
-    @PreUpdate
-    public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }

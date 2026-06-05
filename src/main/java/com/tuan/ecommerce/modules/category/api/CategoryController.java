@@ -7,6 +7,7 @@ import com.tuan.ecommerce.modules.category.application.dto.UpdateCategoryRequest
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +30,7 @@ public class CategoryController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CreateCategoryRequest request) {
         CategoryResponse response = categoryService.createCategory(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -44,12 +46,24 @@ public class CategoryController {
         return categoryService.getCategoryById(id);
     }
 
+    @GetMapping("/slug/{slug}")
+    public CategoryResponse getCategoryBySlug(@PathVariable String slug) {
+        return categoryService.getCategoryBySlug(slug);
+    }
+
+    @GetMapping("/tree")
+    public List<CategoryResponse> getCategoryTree() {
+        return categoryService.getCategoryTree();
+    }
+
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse updateCategory(@PathVariable Long id, @Valid @RequestBody UpdateCategoryRequest request) {
         return categoryService.updateCategory(id, request);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();

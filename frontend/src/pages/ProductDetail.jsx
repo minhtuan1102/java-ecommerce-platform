@@ -97,18 +97,11 @@ const ProductDetail = () => {
         <div className="flex flex-col">
           <div className="mb-10">
             <div className="flex items-center gap-4 mb-6">
-              <button 
-                onClick={() => {
-                  const sId = product.shopId || product.shop?.id;
-                  if (sId) navigate(`/shops/${sId}`);
-                  else alert('Thông tin Shop đang được cập nhật...');
-                }}
-                className="text-[10px] font-black text-primary border-2 border-primary px-3 py-1 rounded-full uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all pointer-events-auto"
-              >
-                {product.shopName || 'Cửa hàng'}
-              </button>
+              <span className="text-[10px] font-black text-primary border-2 border-primary px-3 py-1 rounded-full uppercase tracking-[0.2em]">
+                {product.brandName || 'Thương hiệu'}
+              </span>
               <span className="w-1.5 h-1.5 rounded-full bg-gray-200"></span>
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">CHÍNH HÃNG</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{product.categoryName || 'CHÍNH HÃNG'}</span>
             </div>
             
             <h1 className="text-5xl md:text-6xl font-black text-dark tracking-tighter uppercase leading-[0.9] mb-8">

@@ -6,7 +6,6 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const isSeller = user?.roles?.includes('ROLE_SELLER');
   const isAdmin = user?.roles?.includes('ROLE_ADMIN');
 
   const handleLogout = async () => {
@@ -56,14 +55,9 @@ const Navbar = () => {
                   {isAdmin && (
                     <div className="flex gap-6 border-r pr-6">
                       <Link to="/admin/users" className="text-[10px] font-black text-gray-400 hover:text-dark uppercase tracking-widest">QUẢN LÝ USER</Link>
-                      <Link to="/admin/products" className="text-[10px] font-black text-primary hover:text-primary-dark uppercase tracking-widest">DUYỆT SP</Link>
+                      <Link to="/admin/products" className="text-[10px] font-black text-primary hover:text-primary-dark uppercase tracking-widest">SẢN PHẨM</Link>
+                      <Link to="/admin/products/new" className="text-[10px] font-black text-accent hover:text-primary-dark uppercase tracking-widest">THÊM SP</Link>
                     </div>
-                  )}
-                  
-                  {isSeller ? (
-                    <Link to="/my-shop" className="text-xs font-black bg-accent text-white px-4 py-2 rounded-xl shadow-sm shadow-accent/20 hover:scale-105 transition-transform uppercase tracking-wider">KÊNH NGƯỜI BÁN</Link>
-                  ) : (
-                    <Link to="/register-shop" className="text-[10px] font-black text-primary border-b-2 border-primary pb-0.5 hover:text-primary-dark hover:border-primary-dark transition-all uppercase tracking-widest">TRỞ THÀNH NGƯỜI BÁN</Link>
                   )}
                   
                   <Link to="/profile" className="flex items-center gap-3 pl-2 group">

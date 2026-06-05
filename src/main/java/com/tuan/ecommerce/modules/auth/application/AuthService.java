@@ -52,7 +52,7 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
         }
 
-        Role userRole = roleRepository.findByName("ROLE_USER")
+        Role userRole = roleRepository.findByName("ROLE_CUSTOMER")
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Default role not found"));
 
         User user = authMapper.toEntity(request);

@@ -54,5 +54,15 @@ public class UserRepositoryAdapter implements UserRepository {
     public List<User> findAll() {
         return userJpaRepository.findAll();
     }
+
+    @Override
+    public long count() {
+        return userJpaRepository.count();
+    }
+
+    @Override
+    public List<User> saveAll(List<User> users) {
+        return userJpaRepository.saveAll(users);
+    }
 }
 

@@ -6,14 +6,16 @@ const AddProduct = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [brandsLoading, setBrandsLoading] = useState(true);
   const [error, setError] = useState('');
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
 
   // State form cơ bản
   const [productData, setProductData] = useState({
     name: '',
     description: '',
-    brand: '',
+    brandId: '',
     categoryId: '',
     imageUrls: ['']
   });
@@ -36,6 +38,21 @@ const AddProduct = () => {
     };
 
     fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const response = await api.get('/brands');
+        setBrands(response.data || []);
+      } catch {
+        setError('Khong the tai thuong hieu. Vui long thu lai.');
+      } finally {
+        setBrandsLoading(false);
+      }
+    };
+
+    fetchBrands();
   }, []);
 
   const handleProductChange = (e) => {
@@ -80,6 +97,7 @@ const AddProduct = () => {
     const payload = {
       ...productData,
       categoryId: parseInt(productData.categoryId),
+      brandId: parseInt(productData.brandId),
       imageUrls: validImageUrls,
       skus: skus.map(sku => ({
         ...sku,
@@ -89,9 +107,9 @@ const AddProduct = () => {
     };
 
     try {
-      await api.post('/products', payload);
-      alert('Dang san pham thanh cong. San pham se cho Admin duyet truoc khi hien thi cong khai.');
-      navigate('/my-shop');
+      await api.post('/products/admin', payload);
+      alert('Luu san pham thanh cong.');
+      navigate('/admin/products');
     } catch (err) {
       setError(err.response?.data?.message || 'Có lỗi xảy ra khi đăng sản phẩm. Vui lòng kiểm tra lại.');
     } finally {
@@ -126,9 +144,13 @@ const AddProduct = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Thương hiệu</label>
-                <input type="text" name="brand" value={productData.brand} onChange={handleProductChange}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-primary outline-none" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Thương hiệu *</label>
+                <select name="brandId" required value={productData.brandId} onChange={handleProductChange}
+                  disabled={brandsLoading || brands.length === 0}
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-primary outline-none bg-white">
+                  <option value="">{brandsLoading ? 'Dang tai thuong hieu...' : '-- Chon thuong hieu --'}</option>
+                  {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
               </div>
             </div>
             <div>
@@ -207,7 +229,7 @@ const AddProduct = () => {
         </div>
 
         <div className="flex justify-end gap-4 pt-4 border-t">
-          <button type="button" onClick={() => navigate('/my-shop')} className="px-6 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 font-medium">Hủy</button>
+          <button type="button" onClick={() => navigate('/admin/products')} className="px-6 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 font-medium">Hủy</button>
           <button type="submit" disabled={loading} className={`bg-primary text-white px-8 py-2 rounded font-bold ${loading ? 'opacity-70' : 'hover:bg-red-600'}`}>
             {loading ? 'Đang lưu...' : 'Lưu & Đăng bán'}
           </button>

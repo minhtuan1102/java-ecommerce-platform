@@ -13,9 +13,17 @@ public interface CategoryRepository {
 
     Optional<Category> findById(Long id);
 
+    Optional<Category> findBySlug(String slug);
+
+    List<Category> findByParentIsNull();
+
     boolean existsByNameIgnoreCase(String name);
 
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 
     void delete(Category category);
+
+    long count();
+
+    List<Category> saveAll(List<Category> categories);
 }

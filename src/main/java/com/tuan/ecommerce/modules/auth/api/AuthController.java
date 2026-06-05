@@ -20,7 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-public class AuthController {
+public class  AuthController {
 
     private final AuthService authService;
 

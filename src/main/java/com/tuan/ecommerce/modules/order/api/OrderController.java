@@ -25,21 +25,15 @@ public class OrderController {
 
     @PostMapping("/checkout")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<OrderResponse>> checkout(@Valid @RequestBody CheckoutRequest request, Principal principal) {
-        List<OrderResponse> orders = orderService.checkout(principal.getName(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(orders);
+    public ResponseEntity<OrderResponse> checkout(@Valid @RequestBody CheckoutRequest request, Principal principal) {
+        OrderResponse order = orderService.checkout(principal.getName(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
     @GetMapping("/my-orders")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<OrderResponse>> getMyOrders(Principal principal) {
         return ResponseEntity.ok(orderService.getMyOrders(principal.getName()));
-    }
-
-    @GetMapping("/shop-orders")
-    @PreAuthorize("hasRole('SELLER')")
-    public ResponseEntity<List<OrderResponse>> getShopOrders(Principal principal) {
-        return ResponseEntity.ok(orderService.getShopOrders(principal.getName()));
     }
 
     @GetMapping("/{orderId}")
@@ -49,7 +43,7 @@ public class OrderController {
     }
 
     @PatchMapping("/{orderId}/status")
-    @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrderResponse> updateOrderStatus(
             @PathVariable Long orderId,
             @RequestParam OrderStatus status,

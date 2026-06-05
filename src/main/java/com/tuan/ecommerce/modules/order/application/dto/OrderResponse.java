@@ -17,16 +17,14 @@ import java.util.List;
 @AllArgsConstructor
 public class OrderResponse {
     private Long id;
-    private Long shopId;
-    private String shopName;
     private Long userId;
-    private String userName;
     private String shippingAddress;
     private String phoneNumber;
     private PaymentMethod paymentMethod;
     private BigDecimal totalAmount;
     private OrderStatus status;
-    private List<OrderItemResponse> items;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<OrderItemResponse> items;
 }
+

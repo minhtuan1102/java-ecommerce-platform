@@ -22,4 +22,8 @@ public interface UserRepository {
     Optional<User> findByEmailIgnoreCase(String email);
 
     List<User> findAll();
+
+    long count();
+
+    List<User> saveAll(List<User> users);
 }

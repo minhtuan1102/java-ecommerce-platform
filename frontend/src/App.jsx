@@ -4,19 +4,15 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import RegisterShop from './pages/RegisterShop';
-import MyShop from './pages/MyShop';
 import AddProduct from './pages/AddProduct';
 import Home from './pages/Home';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import MyOrders from './pages/MyOrders';
-import ShopOrders from './pages/ShopOrders';
 import Profile from './pages/Profile';
 import AdminUsers from './pages/AdminUsers';
 import AdminProducts from './pages/AdminProducts';
 import ProductDetail from './pages/ProductDetail';
-import ShopDetail from './pages/ShopDetail';
 
 const ProtectedRoute = ({ children, role }) => {
   const { user } = useAuth();
@@ -71,11 +67,6 @@ function App() {
                 <ProductDetail />
               </ProtectedRoute>
             } />
-            <Route path="/shops/:id" element={
-              <ProtectedRoute>
-                <ShopDetail />
-              </ProtectedRoute>
-            } />
             <Route path="/admin/users" element={
               <ProtectedRoute role="ROLE_ADMIN">
                 <AdminUsers />
@@ -86,23 +77,8 @@ function App() {
                 <AdminProducts />
               </ProtectedRoute>
             } />
-            <Route path="/my-shop/orders" element={
-              <ProtectedRoute role="ROLE_SELLER">
-                <ShopOrders />
-              </ProtectedRoute>
-            } />
-            <Route path="/register-shop" element={
-              <ProtectedRoute>
-                <RegisterShop />
-              </ProtectedRoute>
-            } />
-            <Route path="/my-shop" element={
-              <ProtectedRoute role="ROLE_SELLER">
-                <MyShop />
-              </ProtectedRoute>
-            } />
-            <Route path="/my-shop/add-product" element={
-              <ProtectedRoute role="ROLE_SELLER">
+            <Route path="/admin/products/new" element={
+              <ProtectedRoute role="ROLE_ADMIN">
                 <AddProduct />
               </ProtectedRoute>
             } />

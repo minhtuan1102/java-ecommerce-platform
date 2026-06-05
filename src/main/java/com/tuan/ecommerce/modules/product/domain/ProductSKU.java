@@ -35,6 +35,11 @@ public class ProductSKU {
     @Column(nullable = false)
     private Integer stock;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private ProductSkuStatus status = ProductSkuStatus.ACTIVE;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

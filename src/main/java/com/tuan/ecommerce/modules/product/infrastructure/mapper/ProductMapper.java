@@ -4,6 +4,7 @@ import com.tuan.ecommerce.modules.product.application.dto.CreateProductRequest;
 import com.tuan.ecommerce.modules.product.application.dto.ProductResponse;
 import com.tuan.ecommerce.modules.product.domain.Product;
 import com.tuan.ecommerce.modules.product.domain.ProductImage;
+import com.tuan.ecommerce.modules.product.domain.ProductSpec;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,7 +17,6 @@ public class ProductMapper {
         return Product.builder()
                 .name(request.getName().trim())
                 .description(request.getDescription() != null ? request.getDescription().trim() : null)
-                .brand(request.getBrand() != null ? request.getBrand().trim() : null)
                 .active(true)
                 .build();
     }
@@ -36,23 +36,28 @@ public class ProductMapper {
                 .map(ProductImage::getUrl)
                 .collect(Collectors.toList()) : null;
 
+        List<ProductResponse.SpecResponse> specs = product.getSpecs() != null ? product.getSpecs().stream()
+                .map(spec -> ProductResponse.SpecResponse.builder()
+                        .key(spec.getSpecKey())
+                        .value(spec.getSpecValue())
+                        .build())
+                .collect(Collectors.toList()) : null;
+
         return ProductResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
+                .slug(product.getSlug())
                 .description(product.getDescription())
-                .brand(product.getBrand())
+                .brandId(product.getBrand() != null ? product.getBrand().getId() : null)
+                .brandName(product.getBrand() != null ? product.getBrand().getName() : null)
                 .active(product.isActive())
-                .approvalStatus(product.getApprovalStatus() != null ? product.getApprovalStatus().name() : null)
-                .reviewNote(product.getReviewNote())
-                .approvedByUserId(product.getApprovedBy() != null ? product.getApprovedBy().getId() : null)
-                .approvedByUsername(product.getApprovedBy() != null ? product.getApprovedBy().getUsername() : null)
-                .approvedAt(product.getApprovedAt())
-                .categoryId(product.getCategory().getId())
-                .categoryName(product.getCategory().getName())
-                .shopId(product.getShop().getId())
-                .shopName(product.getShop().getName())
+                .categoryId(product.getCategory() != null ? product.getCategory().getId() : null)
+                .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
+                .averageRating(product.getAverageRating())
+                .reviewCount(product.getReviewCount())
                 .skus(skus)
                 .imageUrls(imageUrls)
+                .specs(specs)
                 .createdAt(product.getCreatedAt())
                 .updatedAt(product.getUpdatedAt())
                 .build();
@@ -62,4 +67,3 @@ public class ProductMapper {
         return products.stream().map(this::toResponse).collect(Collectors.toList());
     }
 }
-

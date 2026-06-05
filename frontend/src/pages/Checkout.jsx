@@ -16,7 +16,7 @@ const Checkout = () => {
       try {
         const response = await api.get('/cart');
         setCart(response.data);
-        if (!response.data || !response.data.shops || response.data.shops.length === 0) {
+        if (!response.data || !response.data.items || response.data.items.length === 0) {
           navigate('/cart'); // Redirect to cart if empty
         }
       } catch (err) {
@@ -48,14 +48,7 @@ const Checkout = () => {
 
   if (loading) return <div className="p-8 text-center">Đang tải thông tin...</div>;
 
-  let totalAmount = 0;
-  if (cart && cart.shops) {
-      cart.shops.forEach(shop => {
-          shop.items.forEach(item => {
-              totalAmount += (item.price * item.quantity);
-          });
-      });
-  }
+  const totalAmount = cart?.totalAmount || 0;
 
   return (
     <div className="max-w-4xl mx-auto p-6 pb-20">
@@ -109,10 +102,8 @@ const Checkout = () => {
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
                 <h2 className="text-xl font-black mb-6 uppercase">Tóm tắt đơn hàng</h2>
                 <div className="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2">
-                    {cart?.shops?.map(shop => (
-                        <div key={shop.shopId} className="border-b border-gray-50 pb-4 last:border-0">
-                            <h3 className="font-bold text-sm text-gray-800 mb-2 uppercase">{shop.shopName}</h3>
-                            {shop.items.map(item => (
+                    {cart?.items?.map(item => (
+                        <div key={item.id} className="border-b border-gray-50 pb-4 last:border-0">
                                 <div key={item.id} className="flex justify-between items-center text-sm mb-2">
                                     <div className="flex-1 pr-4">
                                         <p className="line-clamp-1 font-medium">{item.productName}</p>
@@ -122,7 +113,6 @@ const Checkout = () => {
                                         ₫{(item.price * item.quantity).toLocaleString()}
                                     </div>
                                 </div>
-                            ))}
                         </div>
                     ))}
                 </div>

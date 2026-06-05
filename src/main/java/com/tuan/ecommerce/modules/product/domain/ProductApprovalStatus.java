@@ -5,4 +5,3 @@ public enum ProductApprovalStatus {
     APPROVED,
     REJECTED
 }
-

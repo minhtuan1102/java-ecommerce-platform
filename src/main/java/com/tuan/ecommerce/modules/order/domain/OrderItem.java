@@ -1,5 +1,6 @@
 package com.tuan.ecommerce.modules.order.domain;
 
+import com.tuan.ecommerce.common.domain.BaseEntity;
 import com.tuan.ecommerce.modules.product.domain.ProductSKU;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,7 +29,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderItem {
+public class OrderItem extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,27 +43,18 @@ public class OrderItem {
     @JoinColumn(name = "sku_id", nullable = false)
     private ProductSKU sku;
 
+    @Column(name = "product_name", nullable = false, length = 255)
+    private String productName;
+
+    @Column(name = "sku_code", length = 100)
+    private String skuCode;
+
+    @Column(name = "tier_index", length = 100)
+    private String tierIndex;
+
     @Column(nullable = false)
     private Integer quantity;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    public void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-    }
-
-    @PreUpdate
-    public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }

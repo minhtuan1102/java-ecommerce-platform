@@ -44,7 +44,7 @@ const Home = () => {
     setError('');
 
     try {
-      const response = await api.get('/products/discovery', {
+      const response = await api.get('/products', {
         params: {
           name: searchName || undefined,
           categoryId: selectedCategory || undefined,
@@ -73,8 +73,10 @@ const Home = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCategories();
     fetchProducts(0, size);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearch = (e) => {
@@ -221,7 +223,7 @@ const Home = () => {
                 </div>
 
                 <div className="p-3">
-                  <div className="text-xs text-gray-500 mb-1 truncate">{product.shopName}</div>
+                  <div className="text-xs text-gray-500 mb-1 truncate">{product.brandName || product.categoryName}</div>
                   <h3 className="font-semibold text-gray-900 line-clamp-2 min-h-[48px]">{product.name}</h3>
                   <div className="mt-2 flex items-center justify-between">
                     <div className="text-red-600 font-bold">{Number(product.skus?.[0]?.price || 0).toLocaleString()} VND</div>

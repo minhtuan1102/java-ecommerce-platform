@@ -29,18 +29,13 @@ public class ProductRepositoryAdapter implements ProductRepository {
     }
 
     @Override
+    public Optional<Product> findBySlug(String slug) {
+        return productJpaRepository.findBySlug(slug);
+    }
+
+    @Override
     public List<Product> findAll() {
         return productJpaRepository.findAll();
-    }
-
-    @Override
-    public List<Product> findByShopId(Long shopId) {
-        return productJpaRepository.findByShopId(shopId);
-    }
-
-    @Override
-    public List<Product> findByShopIdAndApprovalStatusAndActiveTrue(Long shopId, ProductApprovalStatus approvalStatus) {
-        return productJpaRepository.findByShopIdAndApprovalStatusAndActiveTrue(shopId, approvalStatus);
     }
 
     @Override

@@ -94,6 +94,16 @@ class CategoryServiceTest {
         }
 
         @Override
+        public Optional<Category> findBySlug(String slug) {
+            return store.stream().filter(c -> c.getSlug() != null && c.getSlug().equals(slug)).findFirst();
+        }
+
+        @Override
+        public List<Category> findByParentIsNull() {
+            return store.stream().filter(c -> c.getParent() == null).toList();
+        }
+
+        @Override
         public boolean existsByNameIgnoreCase(String name) {
             return store.stream().anyMatch(c -> c.getName().equalsIgnoreCase(name));
         }
@@ -106,6 +116,16 @@ class CategoryServiceTest {
         @Override
         public void delete(Category category) {
             store.removeIf(c -> c.getId().equals(category.getId()));
+        }
+
+        @Override
+        public long count() {
+            return store.size();
+        }
+
+        @Override
+        public List<Category> saveAll(List<Category> categories) {
+            return categories.stream().map(this::save).toList();
         }
     }
 }

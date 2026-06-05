@@ -13,9 +13,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateCategoryRequest {
     @NotBlank(message = "Category name is required")
-    @Size(min = 2, max = 100, message = "Category name must be between 2 and 100 characters")
+    @Size(max = 100, message = "Category name must not exceed 100 characters")
     private String name;
 
-    @Size(max = 500, message = "Description cannot exceed 500 characters")
+    @Size(max = 500, message = "Description must not exceed 500 characters")
     private String description;
+
+    private Long parentId;
+
+    private String slug;
+
+    private Boolean active;
 }

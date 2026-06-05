@@ -31,6 +31,16 @@ public class CategoryRepositoryAdapter implements CategoryRepository {
     }
 
     @Override
+    public Optional<Category> findBySlug(String slug) {
+        return categoryJpaRepository.findBySlug(slug);
+    }
+
+    @Override
+    public List<Category> findByParentIsNull() {
+        return categoryJpaRepository.findByParentIsNull();
+    }
+
+    @Override
     public boolean existsByNameIgnoreCase(String name) {
         return categoryJpaRepository.existsByNameIgnoreCase(name);
     }
@@ -44,5 +54,14 @@ public class CategoryRepositoryAdapter implements CategoryRepository {
     public void delete(Category category) {
         categoryJpaRepository.delete(category);
     }
-}
 
+    @Override
+    public long count() {
+        return categoryJpaRepository.count();
+    }
+
+    @Override
+    public List<Category> saveAll(List<Category> categories) {
+        return categoryJpaRepository.saveAll(categories);
+    }
+}

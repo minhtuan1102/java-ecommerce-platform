@@ -23,4 +23,9 @@ public class RoleRepositoryAdapter implements RoleRepository {
     public Role save(Role role) {
         return roleJpaRepository.save(role);
     }
+
+    @Override
+    public long count() {
+        return roleJpaRepository.count();
+    }
 }

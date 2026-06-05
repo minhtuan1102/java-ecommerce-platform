@@ -10,12 +10,12 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductJpaRepository extends JpaRepository<Product, Long> {
-    List<Product> findByShopId(Long shopId);
+    Optional<Product> findBySlug(String slug);
     List<Product> findByCategoryId(Long categoryId);
     List<Product> findByApprovalStatusAndActiveTrue(ProductApprovalStatus approvalStatus);
-    List<Product> findByShopIdAndApprovalStatusAndActiveTrue(Long shopId, ProductApprovalStatus approvalStatus);
 
     @Query("SELECT DISTINCT p FROM Product p LEFT JOIN p.skus s " +
            "WHERE (:name IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:name as string)), '%')) " +

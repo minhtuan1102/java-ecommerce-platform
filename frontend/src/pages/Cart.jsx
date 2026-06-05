@@ -39,7 +39,7 @@ const Cart = () => {
 
   if (loading) return <div className="p-8 text-center">Đang tải giỏ hàng...</div>;
 
-  if (!cart || !cart.shops || cart.shops.length === 0) {
+  if (!cart || !cart.items || cart.items.length === 0) {
     return (
       <div className="max-w-4xl mx-auto mt-10 p-12 bg-white rounded-lg shadow-sm text-center border border-gray-100">
         <div className="text-6xl mb-4">🛒</div>
@@ -60,22 +60,9 @@ const Cart = () => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-        <div className="lg:col-span-2 space-y-12">
-          {cart.shops.map((shop) => (
-            <div key={shop.shopId} className="group">
-              {/* Shop Header */}
-              <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-lg bg-dark flex items-center justify-center text-white text-[10px] font-black">
-                    {shop.shopName?.[0]}
-                  </div>
-                  <span className="font-black text-dark uppercase tracking-widest text-[10px]">{shop.shopName}</span>
-                </div>
-              </div>
-
-              {/* Items */}
+        <div className="lg:col-span-2 space-y-8">
               <div className="space-y-8">
-                {shop.items.map((item) => (
+                {cart.items.map((item) => (
                   <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-8 group/item">
                     <div className="w-24 h-24 bg-gray-50 rounded-[24px] overflow-hidden flex-shrink-0">
                       <img src="https://via.placeholder.com/100" alt={item.productName} className="w-full h-full object-cover grayscale group-hover/item:grayscale-0 transition duration-500" />
@@ -108,8 +95,6 @@ const Cart = () => {
                   </div>
                 ))}
               </div>
-            </div>
-          ))}
         </div>
 
         {/* Tóm tắt đơn hàng */}

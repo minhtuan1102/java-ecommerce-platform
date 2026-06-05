@@ -1,41 +1,29 @@
 package com.tuan.ecommerce.modules.product.domain;
 
-import com.tuan.ecommerce.modules.auth.domain.User;
+import com.tuan.ecommerce.common.domain.BaseEntity;
+import com.tuan.ecommerce.modules.brand.domain.Brand;
 import com.tuan.ecommerce.modules.category.domain.Category;
-import com.tuan.ecommerce.modules.shop.domain.Shop;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.tuan.ecommerce.common.utils.SlugUtils;
+import jakarta.persistence.*;
+import lombok.*;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "products")
+@Table(
+        name = "products",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_products_slug", columnNames = "slug")
+        }
+)
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product {
+public class Product extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,38 +32,36 @@ public class Product {
     @Column(nullable = false, length = 255)
     private String name;
 
+    @Column(nullable = false, unique = true, length = 255)
+    private String slug;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 100)
-    private String brand;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id", nullable = false)
+    private Brand brand;
 
     @Column(name = "is_active")
     @Builder.Default
     private boolean active = true;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "approval_status", nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'PENDING'")
+    @Column(name = "approval_status")
     @Builder.Default
     private ProductApprovalStatus approvalStatus = ProductApprovalStatus.PENDING;
-
-    @Column(name = "review_note", length = 500)
-    private String reviewNote;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approved_by")
-    private User approvedBy;
-
-    @Column(name = "approved_at")
-    private LocalDateTime approvedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shop_id", nullable = false)
-    private Shop shop;
+    @Column(name = "average_rating", precision = 3, scale = 2)
+    @Builder.Default
+    private BigDecimal averageRating = BigDecimal.ZERO;
+
+    @Column(name = "review_count")
+    @Builder.Default
+    private Integer reviewCount = 0;
 
     @Builder.Default
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -85,18 +71,22 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductSKU> skus = new ArrayList<>();
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Builder.Default
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductSpec> specs = new ArrayList<>();
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    public void generateSlug() {
+        if (this.slug == null || this.slug.isEmpty()) {
+            this.slug = SlugUtils.makeSlug(this.name);
+        }
+    }
 
     // Helper methods for compatibility with modules that haven't migrated to SKU yet
-    public java.math.BigDecimal getPrice() {
+    public BigDecimal getPrice() {
         if (skus != null && !skus.isEmpty()) {
             return skus.get(0).getPrice();
         }
-        return java.math.BigDecimal.ZERO;
+        return BigDecimal.ZERO;
     }
 
     public Integer getStock() {
@@ -104,24 +94,5 @@ public class Product {
             return skus.stream().mapToInt(ProductSKU::getStock).sum();
         }
         return 0;
-    }
-
-    public void setStock(Integer stock) {
-        // Dummy setter for compatibility
-    }
-
-    @PrePersist
-    public void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        if (this.approvalStatus == null) {
-            this.approvalStatus = ProductApprovalStatus.PENDING;
-        }
-        this.createdAt = now;
-        this.updatedAt = now;
-    }
-
-    @PreUpdate
-    public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
     }
 }

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 
-const ROLE_OPTIONS = ['ROLE_USER', 'ROLE_SELLER', 'ROLE_ADMIN'];
+const ROLE_OPTIONS = ['ROLE_CUSTOMER', 'ROLE_ADMIN'];
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingUserId, setEditingUserId] = useState(null);
-  const [editForm, setEditForm] = useState({ username: '', email: '', roles: ['ROLE_USER'] });
+  const [editForm, setEditForm] = useState({ username: '', email: '', roles: ['ROLE_CUSTOMER'] });
 
   const fetchUsers = async () => {
     try {
@@ -31,7 +31,7 @@ const AdminUsers = () => {
     setEditForm({
       username: user.username,
       email: user.email,
-      roles: user.roles || ['ROLE_USER']
+      roles: user.roles || ['ROLE_CUSTOMER']
     });
   };
 
@@ -47,7 +47,7 @@ const AdminUsers = () => {
       }
 
       if (nextRoles.length === 0) {
-        nextRoles = ['ROLE_USER'];
+        nextRoles = ['ROLE_CUSTOMER'];
       }
 
       return { ...prev, roles: nextRoles };

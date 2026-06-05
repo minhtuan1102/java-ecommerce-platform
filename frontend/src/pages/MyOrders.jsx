@@ -19,6 +19,18 @@ const MyOrders = () => {
     fetchOrders();
   }, []);
 
+  const cancelOrder = async (orderId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?')) return;
+    try {
+      await api.patch(`/orders/${orderId}/cancel`);
+      alert('Đã hủy đơn hàng thành công!');
+      const response = await api.get('/orders/my-orders');
+      setOrders(response.data);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Có lỗi xảy ra khi hủy đơn hàng.');
+    }
+  };
+
   if (loading) return <div className="p-8 text-center text-gray-500 italic">Đang tải lịch sử đơn hàng...</div>;
 
   return (
@@ -40,14 +52,15 @@ const MyOrders = () => {
             <div key={order.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all">
               <div className="bg-gray-50/50 px-8 py-4 border-b border-gray-100 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-black uppercase">
-                    {order.shopName?.[0]}
-                  </div>
-                  <span className="font-black text-gray-800 text-sm uppercase tracking-tight">{order.shopName}</span>
+                  <span className="font-black text-gray-800 text-sm uppercase tracking-tight">Đơn hàng #{order.id}</span>
                 </div>
                 <div className={`text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-sm ${
-                  order.status === 'DELIVERED' ? 'bg-green-500 text-white' : 
-                  order.status === 'CANCELLED' ? 'bg-red-500 text-white' : 'bg-orange-400 text-white'
+                  order.status === 'DELIVERED' ? 'bg-teal-500 text-white' : 
+                  order.status === 'CANCELLED' ? 'bg-red-500 text-white' : 
+                  order.status === 'PENDING' ? 'bg-orange-500 text-white' :
+                  order.status === 'CONFIRMED' ? 'bg-blue-500 text-white' :
+                  order.status === 'SHIPPING' ? 'bg-cyan-500 text-white' :
+                  'bg-gray-400 text-white'
                 }`}>
                   {order.status}
                 </div>
@@ -81,8 +94,15 @@ const MyOrders = () => {
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-gray-50 flex justify-between items-end">
-                  <div className="bg-gray-50 px-4 py-1 rounded-full border border-gray-100 text-[10px] font-black text-gray-300 uppercase tracking-tighter">
-                    Mã đơn: #{order.id}
+                  <div className="flex flex-col gap-2">
+                    <div className="bg-gray-50 px-4 py-1 rounded-full border border-gray-100 text-[10px] font-black text-gray-300 uppercase tracking-tighter">
+                      Mã đơn: #{order.id}
+                    </div>
+                    {order.status === 'PENDING' && (
+                      <button onClick={() => cancelOrder(order.id)} className="text-[10px] font-black uppercase text-red-500 border border-red-500 px-4 py-1.5 rounded-full hover:bg-red-50 transition-all text-center">
+                        Hủy đơn
+                      </button>
+                    )}
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-3 block mb-1">Tổng số tiền</span>

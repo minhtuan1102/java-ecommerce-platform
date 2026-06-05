@@ -16,20 +16,18 @@ import java.util.List;
 public class ProductResponse {
     private Long id;
     private String name;
+    private String slug;
     private String description;
-    private String brand;
+    private Long brandId;
+    private String brandName;
     private boolean active;
-    private String approvalStatus;
-    private String reviewNote;
-    private Long approvedByUserId;
-    private String approvedByUsername;
-    private LocalDateTime approvedAt;
     private Long categoryId;
     private String categoryName;
-    private Long shopId;
-    private String shopName;
+    private BigDecimal averageRating;
+    private Integer reviewCount;
     private List<SkuResponse> skus;
     private List<String> imageUrls;
+    private List<SpecResponse> specs;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -43,5 +41,14 @@ public class ProductResponse {
         private String tierIndex;
         private BigDecimal price;
         private Integer stock;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SpecResponse {
+        private String key;
+        private String value;
     }
 }

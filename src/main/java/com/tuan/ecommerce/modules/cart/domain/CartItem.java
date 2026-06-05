@@ -1,5 +1,6 @@
 package com.tuan.ecommerce.modules.cart.domain;
 
+import com.tuan.ecommerce.common.domain.BaseEntity;
 import com.tuan.ecommerce.modules.product.domain.ProductSKU;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,7 +28,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CartItem {
+public class CartItem extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,21 +45,4 @@ public class CartItem {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    public void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-    }
-
-    @PreUpdate
-    public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }

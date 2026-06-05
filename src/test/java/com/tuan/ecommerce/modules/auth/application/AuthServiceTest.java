@@ -32,7 +32,7 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         roleRepository = new InMemoryRoleRepository();
-        roleRepository.save(Role.builder().name("ROLE_USER").build());
+        roleRepository.save(Role.builder().name("ROLE_CUSTOMER").build());
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         JwtService jwtService = new JwtService();
         RefreshTokenService refreshTokenService = org.mockito.Mockito.mock(RefreshTokenService.class);
@@ -51,7 +51,7 @@ class AuthServiceTest {
         var result = authService.register(request);
 
         assertEquals("john", result.getUsername());
-        org.assertj.core.api.Assertions.assertThat(result.getRoles()).contains("ROLE_USER");
+        org.assertj.core.api.Assertions.assertThat(result.getRoles()).contains("ROLE_CUSTOMER");
     }
 
     @Test
@@ -150,6 +150,16 @@ class AuthServiceTest {
         public List<User> findAll() {
             return new ArrayList<>(store);
         }
+
+        @Override
+        public long count() {
+            return store.size();
+        }
+
+        @Override
+        public List<User> saveAll(List<User> users) {
+            return users.stream().map(this::save).toList();
+        }
     }
 
     private static class InMemoryRoleRepository implements RoleRepository {
@@ -168,6 +178,11 @@ class AuthServiceTest {
                 store.add(role);
             }
             return role;
+        }
+
+        @Override
+        public long count() {
+            return store.size();
         }
     }
 }

@@ -10,10 +10,9 @@ import java.util.Optional;
 public interface ProductRepository {
     Product save(Product product);
     Optional<Product> findById(Long id);
+    Optional<Product> findBySlug(String slug);
     List<Product> findAll();
-    List<Product> findByShopId(Long shopId);
     List<Product> findByCategoryId(Long categoryId);
-    List<Product> findByShopIdAndApprovalStatusAndActiveTrue(Long shopId, ProductApprovalStatus approvalStatus);
     List<Product> findByApprovalStatusAndActiveTrue(ProductApprovalStatus approvalStatus);
     void delete(Product product);
     List<Product> searchProducts(String name, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice);

@@ -32,6 +32,14 @@ public class CategoryService {
         }
 
         Category category = categoryMapper.toEntity(request);
+        
+        // Xử lý cha nếu có parentId
+        if (request.getParentId() != null) {
+            Category parent = categoryRepository.findById(request.getParentId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parent category not found"));
+            category.setParent(parent);
+        }
+
         Category savedCategory = categoryRepository.save(category);
         return categoryMapper.toResponse(savedCategory);
     }
@@ -42,9 +50,23 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
+    public List<CategoryResponse> getCategoryTree() {
+        // Chỉ lấy các danh mục gốc, Mapper sẽ tự động đệ quy lấy con
+        List<Category> roots = categoryRepository.findByParentIsNull();
+        return categoryMapper.toResponseTree(roots);
+    }
+
+    @Transactional(readOnly = true)
     public CategoryResponse getCategoryById(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+        return categoryMapper.toResponse(category);
+    }
+
+    @Transactional(readOnly = true)
+    public CategoryResponse getCategoryBySlug(String slug) {
+        Category category = categoryRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found with slug: " + slug));
         return categoryMapper.toResponse(category);
     }
 
@@ -59,6 +81,19 @@ public class CategoryService {
         }
 
         categoryMapper.updateEntity(existingCategory, request);
+
+        // Cập nhật cha nếu có thay đổi parentId
+        if (request.getParentId() != null) {
+            if (request.getParentId().equals(id)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A category cannot be its own parent");
+            }
+            Category parent = categoryRepository.findById(request.getParentId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parent category not found"));
+            existingCategory.setParent(parent);
+        } else {
+            existingCategory.setParent(null);
+        }
+
         Category savedCategory = categoryRepository.save(existingCategory);
         return categoryMapper.toResponse(savedCategory);
     }
@@ -67,6 +102,13 @@ public class CategoryService {
     public void deleteCategory(Long id) {
         Category existingCategory = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+        
+        // Kiểm tra xem có danh mục con không trước khi xóa (hoặc để Cascade xử lý)
+        // Ở đây chúng ta chọn báo lỗi nếu có con để an toàn dữ liệu
+        if (existingCategory.getChildren() != null && !existingCategory.getChildren().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete category with subcategories");
+        }
+
         categoryRepository.delete(existingCategory);
     }
 }
