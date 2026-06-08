@@ -1,8 +1,10 @@
 package com.tuan.ecommerce.modules.payment.infrastructure.persistence;
 
 import com.tuan.ecommerce.modules.payment.domain.Payment;
+import com.tuan.ecommerce.modules.payment.domain.PaymentStatus;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,6 +35,11 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
     @Override
     public List<Payment> findByUserId(Long userId) {
         return jpaRepository.findByOrderUserId(userId);
+    }
+
+    @Override
+    public List<Payment> findExpiredPendingPayments(LocalDateTime now) {
+        return jpaRepository.findByStatusInAndExpiresAtBefore(List.of(PaymentStatus.PENDING, PaymentStatus.FAILED), now);
     }
 }
 

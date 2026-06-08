@@ -24,6 +24,7 @@ const Home = () => {
   const [totalElements, setTotalElements] = useState(0);
   const [now] = useState(() => Date.now());
   const [wishlistIds, setWishlistIds] = useState(new Set());
+  const [notice, setNotice] = useState({ type: '', text: '' });
 
   const visiblePages = useMemo(() => {
     const count = Math.min(totalPages, 5);
@@ -124,9 +125,9 @@ const Home = () => {
     try {
       const response = await api.post('/cart', { skuId, quantity: 1 });
       window.dispatchEvent(new CustomEvent('cart:updated', { detail: response.data }));
-      alert('Đã thêm sản phẩm vào giỏ hàng.');
+      setNotice({ type: 'success', text: 'Đã thêm sản phẩm vào giỏ hàng.' });
     } catch (err) {
-      alert(getApiError(err, 'Không thể thêm vào giỏ hàng.'));
+      setNotice({ type: 'error', text: getApiError(err, 'Không thể thêm vào giỏ hàng.') });
     }
   };
 
@@ -144,7 +145,7 @@ const Home = () => {
         : await api.post(`/wishlist/${productId}`);
       setWishlistIds(new Set(response.data || []));
     } catch (err) {
-      alert(getApiError(err, 'Không thể cập nhật danh sách yêu thích.'));
+      setNotice({ type: 'error', text: getApiError(err, 'Không thể cập nhật danh sách yêu thích.') });
     }
   };
 
@@ -178,6 +179,7 @@ const Home = () => {
         </div>
       </section>
 
+      {notice.text && <div className="mb-4"><Notice type={notice.type} message={notice.text} /></div>}
       {error && <div className="mb-4"><Notice type="error" message={error} /></div>}
 
       {loading ? (

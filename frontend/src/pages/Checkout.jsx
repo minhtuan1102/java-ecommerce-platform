@@ -54,7 +54,11 @@ const Checkout = () => {
     setSubmitting(true);
     setError('');
     try {
-      await api.post('/orders/checkout', { recipientName, shippingAddress, phoneNumber, paymentMethod });
+      const response = await api.post('/orders/checkout', { recipientName, shippingAddress, phoneNumber, paymentMethod });
+      if (response.data?.paymentUrl) {
+        window.location.href = response.data.paymentUrl;
+        return;
+      }
       navigate('/my-orders');
     } catch (err) {
       setError(getApiError(err, 'Không thể đặt hàng.'));
@@ -118,7 +122,7 @@ const Checkout = () => {
             <input required value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Số điện thoại liên hệ" className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
             <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
               <option value="COD">Thanh toán khi nhận hàng (COD)</option>
-              <option value="ONLINE" disabled>Thanh toán trực tuyến (sẽ tích hợp sau)</option>
+              <option value="VNPAY">Thanh toán VNPAY</option>
             </select>
           </div>
         </form>

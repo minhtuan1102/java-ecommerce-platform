@@ -6,7 +6,7 @@ import AdminLayout from './AdminLayout';
 import Notice from '../components/Notice';
 import EmptyState from '../components/EmptyState';
 import LoadingSkeleton from '../components/LoadingSkeleton';
-import { formatMoney, getApiError, orderStatusLabel, paymentMethodLabel, statusClass } from '../utils/format';
+import { formatMoney, getApiError, orderStatusLabel, paymentMethodLabel, paymentStatusLabel, statusClass } from '../utils/format';
 
 const sortOrdersNewestFirst = (items) =>
   [...items].sort((a, b) => {
@@ -15,6 +15,7 @@ const sortOrdersNewestFirst = (items) =>
   });
 
 const nextStatusOptions = {
+  PENDING_PAYMENT: ['CANCELLED'],
   PENDING: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['SHIPPING'],
   SHIPPING: ['DELIVERED'],
@@ -22,6 +23,7 @@ const nextStatusOptions = {
 
 const orderTabs = [
   { value: 'ALL', label: 'Tất cả' },
+  { value: 'PENDING_PAYMENT', label: 'Chờ thanh toán' },
   { value: 'PENDING', label: 'Chờ xác nhận' },
   { value: 'CONFIRMED', label: 'Đã xác nhận' },
   { value: 'SHIPPING', label: 'Đang giao' },
@@ -34,6 +36,7 @@ const AdminOrders = () => {
   const [activeStatus, setActiveStatus] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState({ type: '', text: '' });
+  const [refundRefs, setRefundRefs] = useState({});
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -58,6 +61,18 @@ const AdminOrders = () => {
       fetchOrders();
     } catch (err) {
       setNotice({ type: 'error', text: getApiError(err, 'Không thể cập nhật trạng thái.') });
+    }
+  };
+
+  const markRefunded = async (orderId) => {
+    const providerRef = refundRefs[orderId] || '';
+    try {
+      await api.patch(`/orders/${orderId}/payment/refunded`, null, { params: { providerRef: providerRef || undefined } });
+      setNotice({ type: 'success', text: 'Đã xác nhận hoàn tiền.' });
+      setRefundRefs({ ...refundRefs, [orderId]: '' });
+      fetchOrders();
+    } catch (err) {
+      setNotice({ type: 'error', text: getApiError(err, 'Không thể xác nhận hoàn tiền.') });
     }
   };
 
@@ -110,6 +125,7 @@ const AdminOrders = () => {
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
                       Khách hàng #{order.userId} · {paymentMethodLabel[order.paymentMethod] || order.paymentMethod}
+                      {order.paymentStatus ? ` · ${paymentStatusLabel[order.paymentStatus] || order.paymentStatus}` : ''}
                     </p>
                   </div>
                   <div className="text-left md:text-right">
@@ -140,6 +156,23 @@ const AdminOrders = () => {
                     <div className="mt-1 text-gray-600">{order.shippingAddress}</div>
                     <div className="mt-1 text-gray-600">{order.phoneNumber}</div>
                     <div className="mt-4">
+                      {order.paymentStatus === 'REFUND_PENDING' && (
+                        <div className="mb-3 space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3">
+                          <input
+                            value={refundRefs[order.id] || ''}
+                            onChange={(e) => setRefundRefs({ ...refundRefs, [order.id]: e.target.value })}
+                            placeholder="Mã tham chiếu hoàn tiền"
+                            className="w-full rounded-md border border-amber-200 bg-white px-3 py-2 text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => markRefunded(order.id)}
+                            className="w-full rounded-md bg-amber-600 px-3 py-2 text-sm font-semibold text-white"
+                          >
+                            Xác nhận đã hoàn tiền
+                          </button>
+                        </div>
+                      )}
                       {nextStatusOptions[order.status]?.length ? (
                         <select
                           value=""

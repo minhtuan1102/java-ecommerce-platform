@@ -4,6 +4,7 @@ import com.tuan.ecommerce.modules.order.application.OrderService;
 import com.tuan.ecommerce.modules.order.application.dto.CheckoutRequest;
 import com.tuan.ecommerce.modules.order.application.dto.OrderResponse;
 import com.tuan.ecommerce.modules.order.domain.OrderStatus;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,8 +26,10 @@ public class OrderController {
 
     @PostMapping("/checkout")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<OrderResponse> checkout(@Valid @RequestBody CheckoutRequest request, Principal principal) {
-        OrderResponse order = orderService.checkout(principal.getName(), request);
+    public ResponseEntity<OrderResponse> checkout(@Valid @RequestBody CheckoutRequest request,
+                                                  Principal principal,
+                                                  HttpServletRequest httpRequest) {
+        OrderResponse order = orderService.checkout(principal.getName(), request, getClientIp(httpRequest));
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
@@ -61,5 +64,31 @@ public class OrderController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderResponse> cancelMyOrder(@PathVariable Long orderId, Principal principal) {
         return ResponseEntity.ok(orderService.cancelMyOrder(orderId, principal.getName()));
+    }
+
+    @PostMapping("/{orderId}/payment/retry")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> retryPayment(
+            @PathVariable Long orderId,
+            Principal principal,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(orderService.retryPayment(orderId, principal.getName(), getClientIp(httpRequest)));
+    }
+
+    @PatchMapping("/{orderId}/payment/refunded")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<OrderResponse> markPaymentRefunded(
+            @PathVariable Long orderId,
+            @RequestParam(required = false) String providerRef,
+            Principal principal) {
+        return ResponseEntity.ok(orderService.markPaymentRefunded(orderId, providerRef, principal.getName()));
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

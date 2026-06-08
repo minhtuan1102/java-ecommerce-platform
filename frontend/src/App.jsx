@@ -18,6 +18,7 @@ import AdminBrands from './pages/AdminBrands';
 import AdminCategories from './pages/AdminCategories';
 import AdminOrders from './pages/AdminOrders';
 import AdminUsers from './pages/AdminUsers';
+import VnpayReturn from './pages/VnpayReturn';
 
 const PageShell = ({ children }) => (
   <>
@@ -58,6 +59,7 @@ function App() {
 
             <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
             <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+            <Route path="/payment/vnpay-return" element={<ProtectedRoute><VnpayReturn /></ProtectedRoute>} />
             <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
             <Route path="/my-orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

@@ -9,6 +9,7 @@ export const getApiError = (error, fallback = 'Không thể thực hiện thao t
   error?.response?.data?.message || error?.response?.data?.error || fallback;
 
 export const orderStatusLabel = {
+  PENDING_PAYMENT: 'Chờ thanh toán',
   PENDING: 'Chờ xác nhận',
   CONFIRMED: 'Đã xác nhận',
   SHIPPING: 'Đang giao',
@@ -18,10 +19,24 @@ export const orderStatusLabel = {
 
 export const paymentMethodLabel = {
   COD: 'Thanh toán khi nhận hàng',
+  VNPAY: 'Thanh toán VNPAY',
   ONLINE: 'Thanh toán trực tuyến',
 };
 
+export const paymentStatusLabel = {
+  UNPAID: 'Chưa thanh toán',
+  PENDING: 'Đang chờ thanh toán',
+  PAID: 'Đã thanh toán',
+  FAILED: 'Thanh toán lỗi',
+  EXPIRED: 'Đã quá hạn',
+  REFUND_PENDING: 'Chờ hoàn tiền',
+  REFUNDED: 'Đã hoàn tiền',
+  COD_PENDING: 'Chờ thu COD',
+  COD_COLLECTED: 'Đã thu COD',
+};
+
 export const statusClass = {
+  PENDING_PAYMENT: 'bg-purple-50 text-purple-700 border-purple-200',
   PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
   CONFIRMED: 'bg-blue-50 text-blue-700 border-blue-200',
   SHIPPING: 'bg-cyan-50 text-cyan-700 border-cyan-200',

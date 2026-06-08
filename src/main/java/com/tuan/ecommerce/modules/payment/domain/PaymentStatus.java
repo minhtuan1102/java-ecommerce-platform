@@ -6,6 +6,8 @@ public enum PaymentStatus {
     PAID,
     FAILED,
     EXPIRED,
+    REFUND_PENDING,
+    REFUNDED,
     COD_PENDING,
     COD_COLLECTED
 }

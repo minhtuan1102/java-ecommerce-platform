@@ -18,6 +18,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState({ type: '', text: '' });
 
   const fetchProduct = async () => {
     setLoading(true);
@@ -51,15 +52,17 @@ const ProductDetail = () => {
     if (!selectedSku) return;
     try {
       await api.post('/cart', { skuId: selectedSku.id, quantity });
-      alert('Đã thêm sản phẩm vào giỏ hàng.');
+      setNotice({ type: 'success', text: 'Đã thêm sản phẩm vào giỏ hàng.' });
+      return true;
     } catch (err) {
-      alert(getApiError(err, 'Không thể thêm vào giỏ hàng.'));
+      setNotice({ type: 'error', text: getApiError(err, 'Không thể thêm vào giỏ hàng.') });
+      return false;
     }
   };
 
   const buyNow = async () => {
-    await addToCart();
-    if (user) navigate('/checkout');
+    const added = await addToCart();
+    if (user && added) navigate('/checkout');
   };
 
   if (loading) return <main className="mx-auto max-w-7xl px-4 py-10 text-sm text-gray-500">Đang tải chi tiết sản phẩm...</main>;
@@ -80,6 +83,7 @@ const ProductDetail = () => {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+      {notice.text && <div className="mb-4"><Notice type={notice.type} message={notice.text} /></div>}
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         <section>
           <div className="overflow-hidden rounded-md border border-gray-200 bg-white">

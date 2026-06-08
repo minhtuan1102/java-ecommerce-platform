@@ -54,6 +54,11 @@ public class OrderService {
 
     @Transactional
     public OrderResponse checkout(String userEmail, CheckoutRequest request) {
+        return checkout(userEmail, request, "127.0.0.1");
+    }
+
+    @Transactional
+    public OrderResponse checkout(String userEmail, CheckoutRequest request, String clientIp) {
         User user = userRepository.findByEmailIgnoreCase(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -64,14 +69,16 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cart is empty");
         }
 
+        PaymentMethod paymentMethod = request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.COD;
+
         Order order = new Order();
         order.setUser(user);
         order.setRecipientName(request.getRecipientName().trim());
         order.setShippingAddress(request.getShippingAddress());
         order.setPhoneNumber(request.getPhoneNumber());
-        order.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.COD);
+        order.setPaymentMethod(paymentMethod);
         
-        order.setStatus(OrderStatus.PENDING);
+        order.setStatus(paymentService.isOnlinePayment(paymentMethod) ? OrderStatus.PENDING_PAYMENT : OrderStatus.PENDING);
         
         BigDecimal totalAmount = BigDecimal.ZERO;
         
@@ -100,13 +107,17 @@ public class OrderService {
         inventoryService.reserveForOrder(savedOrder, new ArrayList<>(cart.getItems()), userEmail);
         
         // Create payment
-        paymentService.createPayment(savedOrder, request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.COD);
+        paymentService.createPayment(savedOrder, paymentMethod);
 
         // Clear cart
         cart.getItems().clear();
         cartRepository.save(cart);
 
-        return orderMapper.toResponse(savedOrder);
+        OrderResponse response = orderMapper.toResponse(savedOrder);
+        if (paymentService.isOnlinePayment(paymentMethod)) {
+            response.setPaymentUrl(paymentService.createVnpayPaymentUrl(savedOrder, clientIp));
+        }
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -155,14 +166,51 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to cancel this order");
         }
 
-        if (order.getStatus() != OrderStatus.PENDING) {
+        if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.PENDING_PAYMENT) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order cannot be cancelled at current status");
         }
 
         inventoryService.releaseReservations(order.getId());
+        paymentService.handleOrderCancellation(order, userEmail);
 
         order.setStatus(OrderStatus.CANCELLED);
         return orderMapper.toResponse(orderRepository.save(order));
+    }
+
+    @Transactional
+    public OrderResponse retryPayment(Long orderId, String userEmail, String clientIp) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        boolean isAdmin = isAdmin(user);
+        boolean isBuyer = order.getUser().getId().equals(user.getId());
+        if (!isAdmin && !isBuyer) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to pay this order");
+        }
+
+        OrderResponse response = orderMapper.toResponse(order);
+        response.setPaymentUrl(paymentService.retryVnpayPayment(order, clientIp));
+        return response;
+    }
+
+    @Transactional
+    public OrderResponse markPaymentRefunded(Long orderId, String providerRef, String userEmail) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!isAdmin(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to confirm refunds");
+        }
+
+        paymentService.markRefunded(orderId, providerRef);
+        recordStatusHistory(order, order.getStatus(), userEmail, "Refund confirmed");
+        return orderMapper.toResponse(order);
     }
 
     @Transactional
@@ -183,6 +231,10 @@ public class OrderService {
         if (status == OrderStatus.CONFIRMED) {
             inventoryService.commitReservations(order.getId());
         }
+        if (status == OrderStatus.CANCELLED) {
+            inventoryService.releaseReservations(order.getId());
+            paymentService.handleOrderCancellation(order, userEmail);
+        }
 
         order.setStatus(status);
         Order savedOrder = orderRepository.save(order);
@@ -196,6 +248,7 @@ public class OrderService {
         }
 
         Set<OrderStatus> nextStatuses = switch (currentStatus) {
+            case PENDING_PAYMENT -> Set.of(OrderStatus.CANCELLED);
             case PENDING -> Set.of(OrderStatus.CONFIRMED, OrderStatus.CANCELLED);
             case CONFIRMED -> Set.of(OrderStatus.SHIPPING);
             case SHIPPING -> Set.of(OrderStatus.DELIVERED);

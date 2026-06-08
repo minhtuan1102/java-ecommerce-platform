@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
+import Notice from '../components/Notice';
 
 const Register = () => {
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -16,10 +18,11 @@ const Register = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
       await api.post('/auth/register', formData);
-      alert('Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.');
-      navigate('/login');
+      setSuccess('Đăng ký thành công. Đang chuyển sang trang đăng nhập...');
+      window.setTimeout(() => navigate('/login'), 700);
     } catch (err) {
       setError(err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.');
     } finally {
@@ -51,10 +54,9 @@ const Register = () => {
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-8 text-[10px] font-black uppercase tracking-widest border-l-4 border-red-600">
-              {error}
-            </div>
+            <div className="mb-8"><Notice type="error" message={error} /></div>
           )}
+          {success && <div className="mb-8"><Notice type="success" message={success} /></div>}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-6">

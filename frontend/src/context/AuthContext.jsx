@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await api.post('/auth/logout');
     } catch {
+      // Ignore logout API failures and clear local session state.
     } finally {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');

@@ -4,6 +4,8 @@ import com.tuan.ecommerce.modules.order.application.dto.OrderItemResponse;
 import com.tuan.ecommerce.modules.order.application.dto.OrderResponse;
 import com.tuan.ecommerce.modules.order.domain.Order;
 import com.tuan.ecommerce.modules.order.domain.OrderItem;
+import com.tuan.ecommerce.modules.payment.domain.Payment;
+import com.tuan.ecommerce.modules.payment.infrastructure.persistence.PaymentRepository;
 import com.tuan.ecommerce.modules.product.domain.ProductImage;
 import org.springframework.stereotype.Component;
 
@@ -14,10 +16,17 @@ import java.util.stream.Collectors;
 @Component
 public class OrderMapper {
 
+    private final PaymentRepository paymentRepository;
+
+    public OrderMapper(PaymentRepository paymentRepository) {
+        this.paymentRepository = paymentRepository;
+    }
+
     public OrderResponse toResponse(Order order) {
         List<OrderItemResponse> itemResponses = order.getItems().stream()
                 .map(this::toItemResponse)
                 .collect(Collectors.toList());
+        Payment payment = paymentRepository.findByOrderId(order.getId()).orElse(null);
 
         return OrderResponse.builder()
                 .id(order.getId())
@@ -28,6 +37,10 @@ public class OrderMapper {
                 .paymentMethod(order.getPaymentMethod())
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus())
+                .paymentStatus(payment != null ? payment.getStatus() : null)
+                .paymentProviderRef(payment != null ? payment.getProviderRef() : null)
+                .paymentPaidAt(payment != null ? payment.getPaidAt() : null)
+                .paymentExpiresAt(payment != null ? payment.getExpiresAt() : null)
                 .items(itemResponses)
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())

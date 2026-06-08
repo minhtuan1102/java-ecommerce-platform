@@ -5,7 +5,7 @@ import api from '../api/axios';
 import EmptyState from '../components/EmptyState';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import Notice from '../components/Notice';
-import { formatMoney, getApiError, orderStatusLabel, paymentMethodLabel, statusClass } from '../utils/format';
+import { formatMoney, getApiError, orderStatusLabel, paymentMethodLabel, paymentStatusLabel, statusClass } from '../utils/format';
 
 const sortOrdersNewestFirst = (items) =>
   [...items].sort((a, b) => {
@@ -15,6 +15,7 @@ const sortOrdersNewestFirst = (items) =>
 
 const orderTabs = [
   { value: 'ALL', label: 'Tất cả' },
+  { value: 'PENDING_PAYMENT', label: 'Chờ thanh toán' },
   { value: 'PENDING', label: 'Chờ xác nhận' },
   { value: 'CONFIRMED', label: 'Đã xác nhận' },
   { value: 'SHIPPING', label: 'Đang giao' },
@@ -28,6 +29,7 @@ const MyOrders = () => {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState({ type: '', text: '' });
   const [reviewForms, setReviewForms] = useState({});
+  const [pendingCancelId, setPendingCancelId] = useState(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -56,15 +58,33 @@ const MyOrders = () => {
   }, []);
 
   const cancelOrder = async (orderId) => {
-    if (!window.confirm('Bạn muốn hủy đơn hàng này?')) return;
     try {
       await api.patch(`/orders/${orderId}/cancel`);
       setNotice({ type: 'success', text: 'Đã hủy đơn hàng.' });
+      setPendingCancelId(null);
       fetchOrders();
     } catch (err) {
       setNotice({ type: 'error', text: getApiError(err, 'Không thể hủy đơn hàng.') });
     }
   };
+
+  const retryPayment = async (orderId) => {
+    try {
+      const response = await api.post(`/orders/${orderId}/payment/retry`);
+      if (response.data?.paymentUrl) {
+        window.location.assign(response.data.paymentUrl);
+        return;
+      }
+      setNotice({ type: 'error', text: 'Không nhận được liên kết thanh toán.' });
+    } catch (err) {
+      setNotice({ type: 'error', text: getApiError(err, 'Không thể tạo lại thanh toán.') });
+    }
+  };
+
+  const canRetryPayment = (order) =>
+    order.status === 'PENDING_PAYMENT'
+    && order.paymentMethod !== 'COD'
+    && !['PAID', 'EXPIRED', 'REFUND_PENDING', 'REFUNDED'].includes(order.paymentStatus);
 
   const submitReview = async (item) => {
     const form = reviewForms[item.id] || { rating: 5, comment: '' };
@@ -127,7 +147,10 @@ const MyOrders = () => {
                       {orderStatusLabel[order.status] || order.status}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">{paymentMethodLabel[order.paymentMethod] || order.paymentMethod}</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {paymentMethodLabel[order.paymentMethod] || order.paymentMethod}
+                    {order.paymentStatus ? ` · ${paymentStatusLabel[order.paymentStatus] || order.paymentStatus}` : ''}
+                  </p>
                 </div>
                 <div className="text-left md:text-right">
                   <div className="text-sm text-gray-500">Tổng tiền</div>
@@ -171,11 +194,28 @@ const MyOrders = () => {
                 })}
               </div>
 
-              {order.status === 'PENDING' && (
-                <div className="mt-4 flex justify-end">
-                  <button onClick={() => cancelOrder(order.id)} className="rounded-md border border-red-200 px-4 py-2 text-sm font-semibold text-red-600">
-                    Hủy đơn
-                  </button>
+              {(order.status === 'PENDING' || order.status === 'PENDING_PAYMENT') && (
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  {canRetryPayment(order) && (
+                    <button onClick={() => retryPayment(order.id)} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white">
+                      Thanh toán lại
+                    </button>
+                  )}
+                  {pendingCancelId === order.id ? (
+                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-red-100 bg-red-50 px-3 py-2">
+                      <span className="text-sm font-medium text-red-700">Xác nhận hủy đơn?</span>
+                      <button onClick={() => cancelOrder(order.id)} className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-semibold text-white">
+                        Hủy đơn
+                      </button>
+                      <button onClick={() => setPendingCancelId(null)} className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700">
+                        Giữ lại
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setPendingCancelId(order.id)} className="rounded-md border border-red-200 px-4 py-2 text-sm font-semibold text-red-600">
+                      Hủy đơn
+                    </button>
+                  )}
                 </div>
               )}
             </section>
